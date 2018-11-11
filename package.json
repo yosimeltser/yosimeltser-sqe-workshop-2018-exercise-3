@@ -21,7 +21,7 @@
     "author": "",
     "license": "ISC",
     "dependencies": {
-        "esprima": "^4.0.0",
+        "esprima": "^4.0.1",
         "jquery": "^3.3.1"
     },
     "devDependencies": {
