@@ -14,7 +14,7 @@ $(document).ready(function () {
         let codeToParse = $('#codePlaceholder').val();
         let parsedCode = parseCode(codeToParse);
         $('#parsedCode').val(JSON.stringify(parsedCode, null, 2));
-        codeParse(parsedCode.body,initTable());
+        codeParse(parsedCode,initTable());
     });
 });
 
@@ -76,6 +76,20 @@ let ifState = (parsedCode,table) => {
     if (parsedCode.alternate!=undefined)
         codeParse(parsedCode.alternate,table);
 }
+let forSt = (parsedCode,table) =>{
+    let line= parsedCode.left.loc.start.line;
+    let type= parsedCode.type;
+    let name="";
+    let condition="";
+    let value="";
+    addRowToTable(line,type,name,condition,value,table);
+    codeParse(parsedCode.consequent,table);
+    if (parsedCode.alternate!=undefined)
+        codeParse(parsedCode.alternate,table);
+}
+let prog = (parsedCode,table) =>{
+    codeParse(parsedCode.body,table);
+}
 // MAPS = > (TYPE,FUNCTION)
 const arrayOfFunctions= {
     FunctionDeclaration: func,
@@ -85,7 +99,10 @@ const arrayOfFunctions= {
     ExpressionStatement: expr,
     AssignmentExpression: assignment,
     WhileStatement: whileSt,
-    ReturnStatement: ret
+    ReturnStatement: ret,
+    ForStatement:forSt,
+    Program:prog
+
 }
 function codeParse(parsedCode,table){
     if (Array.isArray(parsedCode)) {
@@ -133,8 +150,19 @@ function  addRowToTable(Line,Type,Name,Condition,Value,table){
     table[2].push(Name);
     table[3].push(Condition);
     table[4].push(Value);
+    addRowToView(Line,Type,Name,Condition,Value,table);
 }
+
 // arrayOfFunctions.Identifier("hi");
 // arrayOfFunctions.Function("hi");
 // arrayOfFunctions.BlockStatement("hi");
 // arrayOfFunctions.Variable("hi")
+function addRowToView(Line,Type,Name,Condition,Value) {
+    var tableRef = document.getElementById('myTable').getElementsByTagName('tbody')[0];
+    var newRow   = tableRef.insertRow(tableRef.rows.length);
+    newRow.insertCell(0).appendChild(document.createTextNode(Line));
+    newRow.insertCell(1).appendChild(document.createTextNode(Type));
+    newRow.insertCell(2).appendChild(document.createTextNode(Name));
+    newRow.insertCell(3).appendChild(document.createTextNode(Condition));
+    newRow.insertCell(4).appendChild(document.createTextNode(Value));
+}
