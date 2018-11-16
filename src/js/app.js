@@ -18,8 +18,7 @@ $(document).ready(function () {
     });
 });
 
-
-//FUNCTION HANDLER
+//HANDLERS
 let func= (parsedCode,table) => {
     addRowToTable(parsedCode.id.loc.start.line,parsedCode.type,parsedCode.id.name,"","",table);
     parsedCode.params.forEach(function (parameter){
@@ -27,11 +26,9 @@ let func= (parsedCode,table) => {
     })
     codeParse(parsedCode.body,table);
 }
-//BlockStatement HANDLER
 let block= (parsedCode,table) => {
     codeParse(parsedCode.body,table);
 }
-//var deceleration  HANDLER
 let variable= (parsedCode,table) => {
     parsedCode.declarations.forEach(function (variable){
         addRowToTable(variable.id.loc.start.line,"variable declaration",variable.id.name,"","",table);
@@ -51,7 +48,6 @@ let assignment= (parsedCode,table) => {
         addRowToTable(parsedCode.left.loc.start.line,"assignment expression",parsedCode.left.name,"",value,table);
     }
 }
-
 let whileSt= (parsedCode,table) => {
     let line= parsedCode.test.left.loc.start.line;
     let type= parsedCode.type;
@@ -61,17 +57,35 @@ let whileSt= (parsedCode,table) => {
     addRowToTable(line,type,name,condition,value,table);
     codeParse(parsedCode.body,table);
 }
-
+let ret = (parsedCode,table) => {
+    let line= parsedCode.argument.loc.start.line;
+    let type= parsedCode.type;
+    let name="";
+    let condition="";
+    let value=termCheck(parsedCode.argument);
+    addRowToTable(line,type,name,condition,value,table);
+}
+let ifState = (parsedCode,table) => {
+    let line= parsedCode.test.left.loc.start.line;
+    let type= parsedCode.type;
+    let name="";
+    let condition="";
+    let value="";
+    addRowToTable(line,type,name,condition,value,table);
+    codeParse(parsedCode.consequent,table);
+    if (parsedCode.alternate!=undefined)
+        codeParse(parsedCode.alternate,table);
+}
 // MAPS = > (TYPE,FUNCTION)
 const arrayOfFunctions= {
     FunctionDeclaration: func,
-     BlockStatement: block,
-    // Variable: variable,
+    BlockStatement: block,
+    IfStatement: ifState,
     VariableDeclaration: variable,
     ExpressionStatement: expr,
     AssignmentExpression: assignment,
-    WhileStatement: whileSt
-
+    WhileStatement: whileSt,
+    ReturnStatement: ret
 }
 function codeParse(parsedCode,table){
     if (Array.isArray(parsedCode)) {
@@ -82,23 +96,36 @@ function codeParse(parsedCode,table){
     else {
         arrayOfFunctions[parsedCode.type](parsedCode,table);
     }
-
 }
+//HELP FUNCTIONS
 function binaryExpression(object){
-    var str;
-    if (object.left.type==="Identifier" && object.right.type==="Identifier") {
-        str=object.left.name + " "+ object.operator +" "+ object.right.name;
-    }
-    else if(object.left.type!=="Identifier" && object.right.type!=="Identifier") {
-        str=object.left.value + " "+ object.operator +" "+ object.right.name;
-    }
-    else if(object.left.type==="Identifier" && object.right.type!=="Identifier") {
-        str=object.left.name + " "+ object.operator +" "+ object.right.value;
+    if (object.left.type!=="BinaryExpression"){
+        return termCheck(object.left )+ object.operator  +termCheck(object.right);
     }
     else {
-        str=object.left.value + " "+ object.operator +" "+ object.right.value;
+        return binaryExpression(object.left)+object.operator  +termCheck(object.right);
     }
-    return str;
+}
+//RETURNS A TERM -> NUMBER OR VAR ,ACCORDING TO IDENTIFIER OR LATERAL
+function termCheck(object){
+    if (object.type=="Literal"){
+        return object.value;
+    }
+    else if (object.type=="Identifier") {
+        return object.name;
+    }
+    else if (checkIfMemberExpression(object)){
+        return  MemberExpression(object);
+    }
+}
+function MemberExpression(object){
+    return object.object.name+"[" + object.property.name +"]";
+}
+function checkIfMemberExpression(object){
+    if(object.type==="MemberExpression")
+        return true;
+    else
+        return false;
 }
 function  addRowToTable(Line,Type,Name,Condition,Value,table){
     table[0].push(Line);
@@ -106,7 +133,6 @@ function  addRowToTable(Line,Type,Name,Condition,Value,table){
     table[2].push(Name);
     table[3].push(Condition);
     table[4].push(Value);
-    console.log(table)
 }
 // arrayOfFunctions.Identifier("hi");
 // arrayOfFunctions.Function("hi");
