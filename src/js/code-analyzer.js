@@ -139,7 +139,7 @@ function termCheck(object) {
     else if (object.type == 'UnaryExpression') {
         return unaryExpression(object);
     }
-    else if (checkIfMemberExpression(object)) {
+    else if (object.type === 'MemberExpression') {
         return MemberExpression(object);
     }
 }
@@ -150,13 +150,6 @@ function unaryExpression(object) {
 
 function MemberExpression(object) {
     return object.object.name + '[' + object.property.name + ']';
-}
-
-function checkIfMemberExpression(object) {
-    if (object.type === 'MemberExpression')
-        return true;
-    else
-        return false;
 }
 
 function addRowToTable(Line, Type, Name, Condition, Value, table) {
