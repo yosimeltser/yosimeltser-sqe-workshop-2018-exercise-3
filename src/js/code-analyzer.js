@@ -38,13 +38,13 @@ let expr = (parsedCode, table) => {
 let assignment = (parsedCode, table) => {
     //RIGHT LEAF IS A VALUE
     if (parsedCode.right.type === 'Literal') {
-        addRowToTable(parsedCode.left.loc.start.line, 'assignment expression', parsedCode.left.name, '', parsedCode.right.value, table);
+        addRowToTable(parsedCode.left.loc.start.line, 'assignment expression', termCheck(parsedCode.left), '', parsedCode.right.value, table);
     }
     //RIGHT LEAF IS A BINARY EXPRESSION
     //else if (parsedCode.right.type === 'BinaryExpression') {
     else{
         let value = binaryExpression(parsedCode.right);
-        addRowToTable(parsedCode.left.loc.start.line, 'assignment expression', parsedCode.left.name, '', value, table);
+        addRowToTable(parsedCode.left.loc.start.line, 'assignment expression', termCheck(parsedCode.left), '', value, table);
     }
 };
 let whileSt = (parsedCode, table) => {
@@ -141,11 +141,11 @@ function termCheck(object) {
     else if (object.type == 'UnaryExpression') {
         return unaryExpression(object);
     }
-    // else if (object.type === 'MemberExpression') {
-    //     return MemberExpression(object);
-    // }
-    else {
+    else if (object.type == 'MemberExpression'){
         return MemberExpression(object);
+    }
+    else{
+        return binaryExpression(object);
     }
 }
 
@@ -154,7 +154,16 @@ function unaryExpression(object) {
 }
 
 function MemberExpression(object) {
-    return object.object.name + '[' + object.property.name + ']';
+    let obj;
+    obj=object.object.name;
+    let prop;
+    if (object.property.type==='Identifier'){
+        prop=object.property.name;
+    }
+    else {
+        prop=object.property.value;
+    }
+    return obj + '[' + prop + ']';
 }
 
 function addRowToTable(Line, Type, Name, Condition, Value, table) {

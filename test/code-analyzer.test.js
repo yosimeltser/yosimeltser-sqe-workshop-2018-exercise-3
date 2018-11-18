@@ -11,6 +11,15 @@ describe('The javascript parser', () => {
             JSON.stringify(table2)
         );
     });
+    it('Check If Assignment is working when binary expression is upside down', () => {
+        let table1=codeParse(parseCode('x=z/(x+y);'), initTable());
+        let table2= initTable();
+        table2=AddRow(table2,1,'assignment expression','x','','z/x+y');
+        assert.equal(
+            JSON.stringify(table1),
+            JSON.stringify(table2)
+        );
+    });
     it('Check If for statement is working', () => {
         let table1=codeParse(parseCode('for (x=0;x<10;x++){}'), initTable());
         let table2= initTable();
@@ -39,6 +48,18 @@ describe('The javascript parser', () => {
         let table1=codeParse(parseCode('if (X < V[mid]) high = mid - 1; else if(X < V[mid]) high = mid - 1;'), initTable());
         let table2= initTable();
         table2=AddRow(table2,1,'IfStatement','','X<V[mid]','');
+        table2=AddRow(table2,1,'assignment expression','high','','mid-1');
+        table2=AddRow(table2,1,'IfStatement','','X<V[mid]','');
+        table2=AddRow(table2,1,'assignment expression','high','','mid-1');
+        assert.equal(
+            JSON.stringify(table1),
+            JSON.stringify(table2)
+        );
+    });
+    it('Check MemberExpression with value', () => {
+        let table1=codeParse(parseCode('if (X < V[1]) high = mid - 1; else if(X < V[mid]) high = mid - 1;'), initTable());
+        let table2= initTable();
+        table2=AddRow(table2,1,'IfStatement','','X<V[1]','');
         table2=AddRow(table2,1,'assignment expression','high','','mid-1');
         table2=AddRow(table2,1,'IfStatement','','X<V[mid]','');
         table2=AddRow(table2,1,'assignment expression','high','','mid-1');
@@ -81,6 +102,15 @@ describe('The javascript parser', () => {
         let table1=codeParse(parseCode('x=1+1+1+a+V[x]'), initTable());
         let table2= initTable();
         table2=AddRow(table2,1,'assignment expression','x','','1+1+1+a+V[x]');
+        assert.equal(
+            JSON.stringify(table1),
+            JSON.stringify(table2)
+        );
+    });
+    it('complex binary Expression ver 2', () => {
+        let table1=codeParse(parseCode('x[m]=1+1+1+a+V[x]'), initTable());
+        let table2= initTable();
+        table2=AddRow(table2,1,'assignment expression','x[m]','','1+1+1+a+V[x]');
         assert.equal(
             JSON.stringify(table1),
             JSON.stringify(table2)
