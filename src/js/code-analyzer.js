@@ -176,5 +176,5 @@ const arrayOfFunctions = {
     ForStatement: forSt,
     Program: prog,
     UpdateExpression: upExp
-}
+};
 
