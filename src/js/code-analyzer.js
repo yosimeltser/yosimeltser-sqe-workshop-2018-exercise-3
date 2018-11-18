@@ -37,8 +37,8 @@ let expr = (parsedCode, table) => {
 };
 let assignment = (parsedCode, table) => {
     //RIGHT LEAF IS A VALUE
-    if (parsedCode.right.type === 'Literal') {
-        addRowToTable(parsedCode.left.loc.start.line, 'assignment expression', termCheck(parsedCode.left), '', parsedCode.right.value, table);
+    if (parsedCode.right.type !== 'BinaryExpression') {
+        addRowToTable(parsedCode.left.loc.start.line, 'assignment expression', termCheck(parsedCode.left), '', termCheck(parsedCode.right), table);
     }
     //RIGHT LEAF IS A BINARY EXPRESSION
     //else if (parsedCode.right.type === 'BinaryExpression') {
@@ -154,16 +154,7 @@ function unaryExpression(object) {
 }
 
 function MemberExpression(object) {
-    let obj;
-    obj=object.object.name;
-    let prop;
-    if (object.property.type==='Identifier'){
-        prop=object.property.name;
-    }
-    else {
-        prop=object.property.value;
-    }
-    return obj + '[' + prop + ']';
+    return termCheck(object.object) + '[' + termCheck(object.property) + ']';
 }
 
 function addRowToTable(Line, Type, Name, Condition, Value, table) {
