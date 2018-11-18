@@ -5,11 +5,7 @@ describe('The javascript parser', () => {
     it('Check If Assignment is working', () => {
         let table1=codeParse(parseCode('x=4;'), initTable());
         let table2= initTable();
-        table2[0].push(1);
-        table2[1].push('assignment expression');
-        table2[2].push('x');
-        table2[3].push('');
-        table2[4].push(4);
+        table2=AddRow(table2,1,'assignment expression','x','',4);
         assert.equal(
             JSON.stringify(table1),
             JSON.stringify(table2)
@@ -27,9 +23,23 @@ describe('The javascript parser', () => {
             JSON.stringify(table2)
         );
     });
-    it('Check MemberExpression, if statement', () => {
-        let table1=codeParse(parseCode('if (X < V[mid]) high = mid - 1;'), initTable());
+    it('Check If for statement is working ver 2 ***prefix update***', () => {
+        let table1=codeParse(parseCode('for (x=0;x<10;++x){}'), initTable());
         let table2= initTable();
+        table2=AddRow(table2,1,'ForStatement','','','');
+        table2=AddRow(table2,1,'assignment expression','x','',0);
+        table2=AddRow(table2,1,'test','','x<10','');
+        table2=AddRow(table2,1,'UpdateExpression','','','++x');
+        assert.equal(
+            JSON.stringify(table1),
+            JSON.stringify(table2)
+        );
+    });
+    it('Check MemberExpression, if statement', () => {
+        let table1=codeParse(parseCode('if (X < V[mid]) high = mid - 1; else if(X < V[mid]) high = mid - 1;'), initTable());
+        let table2= initTable();
+        table2=AddRow(table2,1,'IfStatement','','X<V[mid]','');
+        table2=AddRow(table2,1,'assignment expression','high','','mid-1');
         table2=AddRow(table2,1,'IfStatement','','X<V[mid]','');
         table2=AddRow(table2,1,'assignment expression','high','','mid-1');
         assert.equal(
@@ -68,15 +78,16 @@ describe('The javascript parser', () => {
         );
     });
     it('complex binary Expression', () => {
-        let table1=codeParse(parseCode('x=1+1+1+a'), initTable());
+        let table1=codeParse(parseCode('x=1+1+1+a+V[x]'), initTable());
         let table2= initTable();
-        table2=AddRow(table2,1,'assignment expression','x','','1+1+1+a');
+        table2=AddRow(table2,1,'assignment expression','x','','1+1+1+a+V[x]');
         assert.equal(
             JSON.stringify(table1),
             JSON.stringify(table2)
         );
     });
 });
+
 function AddRow(table,line,type,name,condition,value){
     table[0].push(line);
     table[1].push(type);

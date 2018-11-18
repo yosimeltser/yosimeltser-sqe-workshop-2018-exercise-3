@@ -41,7 +41,8 @@ let assignment = (parsedCode, table) => {
         addRowToTable(parsedCode.left.loc.start.line, 'assignment expression', parsedCode.left.name, '', parsedCode.right.value, table);
     }
     //RIGHT LEAF IS A BINARY EXPRESSION
-    else if (parsedCode.right.type === 'BinaryExpression') {
+    //else if (parsedCode.right.type === 'BinaryExpression') {
+    else{
         let value = binaryExpression(parsedCode.right);
         addRowToTable(parsedCode.left.loc.start.line, 'assignment expression', parsedCode.left.name, '', value, table);
     }
@@ -129,6 +130,7 @@ function binaryExpression(object) {
 }
 
 //RETURNS A TERM -> NUMBER OR VAR ,ACCORDING TO IDENTIFIER OR LATERAL
+/* istanbul ignore else  */
 function termCheck(object) {
     if (object.type == 'Literal') {
         return object.value;
@@ -139,7 +141,10 @@ function termCheck(object) {
     else if (object.type == 'UnaryExpression') {
         return unaryExpression(object);
     }
-    else if (object.type === 'MemberExpression') {
+    // else if (object.type === 'MemberExpression') {
+    //     return MemberExpression(object);
+    // }
+    else {
         return MemberExpression(object);
     }
 }
