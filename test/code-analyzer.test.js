@@ -12,7 +12,7 @@ describe('The javascript parser', () => {
         );
     });
     it('Check If Assignment is working when binary expression is upside down', () => {
-        let table1=codeParse(parseCode('x=z/(x+y);'), initTable());
+        let table1=codeParse(parseCode('x=z/(x+y)ssfdfsdf;'), initTable());
         let table2= initTable();
         table2=AddRow(table2,1,'assignment expression','x','','z/x+y');
         assert.equal(
