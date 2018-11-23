@@ -116,6 +116,15 @@ describe('The javascript parser', () => {
             JSON.stringify(table2)
         );
     });
+    it('do while statement', () => {
+        let table1=codeParse(parseCode('do {} while (i < 5);'), initTable());
+        let table2= initTable();
+        table2=AddRow(table2,1,'DoWhileStatement','','i<5','');
+        assert.equal(
+            JSON.stringify(table1),
+            JSON.stringify(table2)
+        );
+    });
 });
 
 function AddRow(table,line,type,name,condition,value){

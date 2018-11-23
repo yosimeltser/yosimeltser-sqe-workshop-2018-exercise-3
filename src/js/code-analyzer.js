@@ -105,7 +105,15 @@ let upExp = (parsedCode, table) => {
     addRowToTable(line, type, name, condition, value, table);
 };
 
-
+let doWhile = (parsedCode, table) => {
+    let line = parsedCode.test.left.loc.start.line;
+    let type = parsedCode.type;
+    let name = '';
+    let condition = binaryExpression(parsedCode.test);
+    let value = '';
+    addRowToTable(line, type, name, condition, value, table);
+    codeParse(parsedCode.body, table);
+};
 
 function codeParse(parsedCode, table) {
     if (Array.isArray(parsedCode)) {
@@ -175,6 +183,7 @@ const arrayOfFunctions = {
     ReturnStatement: ret,
     ForStatement: forSt,
     Program: prog,
-    UpdateExpression: upExp
+    UpdateExpression: upExp,
+    DoWhileStatement: doWhile
 };
 
