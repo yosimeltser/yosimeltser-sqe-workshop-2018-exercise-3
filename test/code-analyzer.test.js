@@ -5,7 +5,34 @@ describe('The javascript parser', () => {
     it('Check If Assignment is working', () => {
         let table1=codeParse(parseCode('x=4;'), initTable());
         let table2= initTable();
-        table2=AddRow(table2,1,'assignment expression','x','',4);
+        table2=AddRow(table2,1,'assignment expression','x','','4');
+        assert.equal(
+            JSON.stringify(table1),
+            JSON.stringify(table2)
+        );
+    });
+    it('Check If Assignment is working with +=', () => {
+        let table1=codeParse(parseCode('x+=4;'), initTable());
+        let table2= initTable();
+        table2=AddRow(table2,1,'assignment expression','x','','x+4');
+        assert.equal(
+            JSON.stringify(table1),
+            JSON.stringify(table2)
+        );
+    });
+    it('Check If Assignment is working with -=', () => {
+        let table1=codeParse(parseCode('x-=4;'), initTable());
+        let table2= initTable();
+        table2=AddRow(table2,1,'assignment expression','x','','x-4');
+        assert.equal(
+            JSON.stringify(table1),
+            JSON.stringify(table2)
+        );
+    });
+    it('Check If Assignment is working', () => {
+        let table1=codeParse(parseCode('x=4;'), initTable());
+        let table2= initTable();
+        table2=AddRow(table2,1,'assignment expression','x','','4');
         assert.equal(
             JSON.stringify(table1),
             JSON.stringify(table2)
@@ -24,7 +51,7 @@ describe('The javascript parser', () => {
         let table1=codeParse(parseCode('for (x=0;x<10;x++){}'), initTable());
         let table2= initTable();
         table2=AddRow(table2,1,'ForStatement','','','');
-        table2=AddRow(table2,1,'assignment expression','x','',0);
+        table2=AddRow(table2,1,'assignment expression','x','','0');
         table2=AddRow(table2,1,'test','','x<10','');
         table2=AddRow(table2,1,'UpdateExpression','','','x++');
         assert.equal(
@@ -36,7 +63,7 @@ describe('The javascript parser', () => {
         let table1=codeParse(parseCode('for (x=0;x<10;++x){}'), initTable());
         let table2= initTable();
         table2=AddRow(table2,1,'ForStatement','','','');
-        table2=AddRow(table2,1,'assignment expression','x','',0);
+        table2=AddRow(table2,1,'assignment expression','x','','0');
         table2=AddRow(table2,1,'test','','x<10','');
         table2=AddRow(table2,1,'UpdateExpression','','','++x');
         assert.equal(

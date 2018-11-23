@@ -36,17 +36,32 @@ let expr = (parsedCode, table) => {
     codeParse(parsedCode.expression, table);
 };
 let assignment = (parsedCode, table) => {
+    let complex= complexAssignment(parsedCode);
     //RIGHT LEAF IS A VALUE
     if (parsedCode.right.type !== 'BinaryExpression') {
-        addRowToTable(parsedCode.left.loc.start.line, 'assignment expression', termCheck(parsedCode.left), '', termCheck(parsedCode.right), table);
+        addRowToTable(parsedCode.left.loc.start.line, 'assignment expression', termCheck(parsedCode.left), '',complex+ termCheck(parsedCode.right), table);
     }
     //RIGHT LEAF IS A BINARY EXPRESSION
     //else if (parsedCode.right.type === 'BinaryExpression') {
     else{
         let value = binaryExpression(parsedCode.right);
-        addRowToTable(parsedCode.left.loc.start.line, 'assignment expression', termCheck(parsedCode.left), '', value, table);
+        addRowToTable(parsedCode.left.loc.start.line, 'assignment expression', termCheck(parsedCode.left), '',complex+ value, table);
     }
 };
+let complexAssignment = (parsedCode) => {
+    let complex='';
+    if (parsedCode.operator=='+='){
+        complex+=termCheck(parsedCode.left)+ '+';
+    }
+    else if (parsedCode.operator=='-='){
+        complex+=termCheck(parsedCode.left)+ '-';
+    }
+    else {
+        complex='';
+    }
+    return complex;
+};
+
 let whileSt = (parsedCode, table) => {
     let line = parsedCode.test.left.loc.start.line;
     let type = parsedCode.type;
