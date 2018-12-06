@@ -1,154 +1,164 @@
 import * as esprima from 'esprima';
+import * as $ from 'jquery';
 export {codeParse};
 export {parseCode};
-export {initTable};
+export {readCodeLineByLine};
 const parseCode = (codeToParse) => {
-    return esprima.parseScript(codeToParse,{loc:true});
+    return esprima.parseScript(codeToParse, {loc: true});
 };
-
-
-//TABLE OF THE MODEL LAYER WILL BE TRANSFORMED INTO HTML
-function initTable() {
-    let table = new Array(5);
-    for (let i = 0; i < 5; i++) {
-        table[i] = new Array();
-    }
-    return table;
-}
-
+let original= new Map();
+let substitution = new Map();
+let assignmentScope= new Map();
+let rows= [];
 //HANDLERS
-let func = (parsedCode, table) => {
-    addRowToTable(parsedCode.id.loc.start.line, parsedCode.type, parsedCode.id.name, '', '', table);
+let func = (parsedCode) => {
+    //addRowToTable(parsedCode.id.loc.start.line, parsedCode.type, parsedCode.id.name, '', '', table);
     parsedCode.params.forEach(function (parameter) {
-        addRowToTable(parameter.loc.start.line, 'variable declaration', parameter.name, '', '', table);
+    //addRowToTable(parameter.loc.start.line, 'variable declaration', parameter.name, '', '', table);
     });
-    codeParse(parsedCode.body, table);
+    codeParse(parsedCode.body);
 };
-let block = (parsedCode, table) => {
-    codeParse(parsedCode.body, table);
+let block = (parsedCode) => {
+    codeParse(parsedCode.body);
 };
-let variable = (parsedCode, table) => {
-    parsedCode.declarations.forEach(function (variable) {
-        addRowToTable(variable.id.loc.start.line, 'variable declaration', variable.id.name, '', 'null (or nothing)', table);
-    });
+
+let variable = (parsedCode) => {
+    codeParse(parsedCode.declarations);
 };
-let expr = (parsedCode, table) => {
-    codeParse(parsedCode.expression, table);
-};
-let assignment = (parsedCode, table) => {
-    let complex= complexAssignment(parsedCode);
-    //RIGHT LEAF IS A VALUE
-    if (parsedCode.right.type !== 'BinaryExpression') {
-        addRowToTable(parsedCode.left.loc.start.line, 'assignment expression', termCheck(parsedCode.left), '',complex+ termCheck(parsedCode.right), table);
-    }
-    //RIGHT LEAF IS A BINARY EXPRESSION
-    //else if (parsedCode.right.type === 'BinaryExpression') {
-    else{
-        let value = binaryExpression(parsedCode.right);
-        addRowToTable(parsedCode.left.loc.start.line, 'assignment expression', termCheck(parsedCode.left), '',complex+ value, table);
-    }
-};
-let complexAssignment = (parsedCode) => {
-    let complex='';
-    if (parsedCode.operator=='+='){
-        complex+=termCheck(parsedCode.left)+ '+';
-    }
-    else if (parsedCode.operator=='-='){
-        complex+=termCheck(parsedCode.left)+ '-';
+let variableDec = (parsedCode) => {
+    let line=parsedCode.id.loc.start.line;
+    var spaces=original.get(line).search(/\S/);
+    let value= 'let ';
+    if (parsedCode.init != null) {
+        changeValSab(parsedCode.id.name, termCheck(parsedCode.init));
+        //line=(new Array(spaces + 1).join(' ')+value+parsedCode.id.name+termCheck(parsedCode.init));
     }
     else {
-        complex='';
+        //line=(new Array(spaces + 1).join(' ')+value+parsedCode.id.name+termCheck(parsedCode.init));
+        substitution.set(parsedCode.id.name, '');
     }
-    return complex;
+    //rows.push(line);
+};
+let expr = (parsedCode) => {
+    codeParse(parsedCode.expression);
+};
+let assignment = (parsedCode) => {
+    // let spaces=original.get(parsedCode.left.loc.start.line).search(/\S/);
+    if (parsedCode.right.type !== 'BinaryExpression') {
+        changeValScope(termCheck(parsedCode.left), termCheck(parsedCode.right));
+        // let value = termCheck(parsedCode.left)+ '='  + termCheck(parsedCode.right);
+        // new Array(spaces + 1).join(' ')+value;
+        // let value=substitution.get(termCheck(parsedCode.left));
+        // let line= termCheck(parsedCode.left)+' = '+value;
+        // original.set(parsedCode.left.loc.start.line,line);
+    }
+    //RIGHT LEAF IS A BINARY EXPRESSION
+    else {
+        let value = binaryExpression(parsedCode.right);
+        changeValScope(termCheck(parsedCode.left), value);
+    }
 };
 
+// let complexAssignment = (parsedCode) => {
+//     let complex = '';
+//     if (parsedCode.operator == '+=') {
+//         complex += termCheck(parsedCode.left) + '+';
+//     }
+//     else if (parsedCode.operator == '-=') {
+//         complex += termCheck(parsedCode.left) + '-';
+//     }
+//     else {
+//         complex = '';
+//     }
+//     return complex;
+// };
+
 let whileSt = (parsedCode, table) => {
-    let line = parsedCode.test.left.loc.start.line;
-    let type = parsedCode.type;
-    let name = '';
-    let condition = binaryExpression(parsedCode.test);
-    let value = '';
-    addRowToTable(line, type, name, condition, value, table);
+    // let line = parsedCode.test.left.loc.start.line;
+    // let type = parsedCode.type;
+    // let name = '';
+    // let condition = binaryExpression(parsedCode.test);
+    // let value = '';
+    // addRowToTable(line, type, name, condition, value, table);
+    assignmentScope=new Map(substitution);
     codeParse(parsedCode.body, table);
 };
-let ret = (parsedCode, table) => {
+let ret = (parsedCode) => {
     let line = parsedCode.argument.loc.start.line;
-    let type = parsedCode.type;
-    let name = '';
-    let condition = '';
     let value = termCheck(parsedCode.argument);
-    addRowToTable(line, type, name, condition, value, table);
+    var spaces=original.get(line).search(/\S/);
+    value='return ' + value;
+    console.log(new Array(spaces + 1).join(' ')+value);
+    original.set(line,'return ' + value);
 };
 let ifState = (parsedCode, table) => {
-    let line = parsedCode.test.left.loc.start.line;
-    let type = parsedCode.type;
-    let name = '';
-    let condition = binaryExpression(parsedCode.test);
-    let value = '';
-    addRowToTable(line, type, name, condition, value, table);
+    // let line = parsedCode.test.left.loc.start.line;
+    // let type = parsedCode.type;
+    // let name = '';
+    console.log(binaryExpression(parsedCode.test));
+    // let value = '';
+    // addRowToTable(line, type, name, condition, value, table);
+    assignmentScope=new Map(substitution);
     codeParse(parsedCode.consequent, table);
     if (parsedCode.alternate != undefined)
         codeParse(parsedCode.alternate, table);
 };
-let forSt = (parsedCode, table) => {
-    let line = parsedCode.init.left.loc.start.line;
-    let type = parsedCode.type;
-    let name = '';
-    let condition = '';
-    let value = '';
-    addRowToTable(line, type, name, condition, value, table);
-    codeParse(parsedCode.init, table);
-    addRowToTable(line, 'test', '', binaryExpression(parsedCode.test), '', table);
-    codeParse(parsedCode.update, table);
-    codeParse(parsedCode.body,table);
+let prog = (parsedCode) => {
+    codeParse(parsedCode.body);
 };
-let prog = (parsedCode, table) => {
-    codeParse(parsedCode.body, table);
-};
-let upExp = (parsedCode, table) => {
-    let line = parsedCode.argument.loc.start.line;
-    let type = parsedCode.type;
-    let name = '';
-    let condition = '';
+let upExp = (parsedCode) => {
+    // let line = parsedCode.argument.loc.start.line;
+    // let type = parsedCode.type;
+    // let name = '';
+    // let condition = '';
     let value = '';
     if (parsedCode.prefix) {
         value = parsedCode.operator + parsedCode.argument.name;
     }
     else {
-        value = parsedCode.argument.name+parsedCode.operator;
+        value = parsedCode.argument.name + parsedCode.operator;
     }
-    addRowToTable(line, type, name, condition, value, table);
 };
 
-let doWhile = (parsedCode, table) => {
-    let line = parsedCode.test.left.loc.start.line;
-    let type = parsedCode.type;
-    let name = '';
-    let condition = binaryExpression(parsedCode.test);
-    let value = '';
-    addRowToTable(line, type, name, condition, value, table);
-    codeParse(parsedCode.body, table);
-};
+// let doWhile = (parsedCode) => {
+//     let line = parsedCode.test.left.loc.start.line;
+//     let type = parsedCode.type;
+//     let name = '';
+//     let condition = binaryExpression(parsedCode.test);
+//     let value = '';
+//
+//     codeParse(parsedCode.body);
+// };
 
-function codeParse(parsedCode, table) {
+function codeParse(parsedCode) {
     if (Array.isArray(parsedCode)) {
         parsedCode.forEach(function (Element) {
-            arrayOfFunctions[Element.type](Element, table);
+            arrayOfFunctions[Element.type](Element);
         });
     }
     else {
-        arrayOfFunctions[parsedCode.type](parsedCode, table);
+        arrayOfFunctions[parsedCode.type](parsedCode);
     }
-    return table;
+    return original;
 }
 
 //HELP FUNCTIONS
 function binaryExpression(object) {
     if (object.left.type !== 'BinaryExpression') {
-        return termCheck(object.left) + object.operator + termCheck(object.right);
+        if (assignmentScope.get(termCheck(object.right))==null){
+            return subHas(termCheck(object.left))+ object.operator + subHas(termCheck(object.right));
+        }
+        else {
+            return scopeHas(termCheck(object.left))+ object.operator + scopeHas(termCheck(object.right));
+        }
     }
     else {
-        return binaryExpression(object.left) + object.operator + termCheck(object.right);
+        if (assignmentScope.get(termCheck(object.right))==null){
+            return binaryExpression(object.left) + object.operator + subHas(termCheck(object.right));
+        }
+        else {
+            return binaryExpression(object.left) + object.operator + scopeHas(termCheck(object.right));
+        }
     }
 }
 
@@ -164,13 +174,22 @@ function termCheck(object) {
     else if (object.type == 'UnaryExpression') {
         return unaryExpression(object);
     }
-    else if (object.type == 'MemberExpression'){
+    else if (object.type == 'MemberExpression') {
         return MemberExpression(object);
     }
-    else{
+    else {
         return binaryExpression(object);
     }
 }
+
+// function identifierHandler(key) {
+//     if (substitution.has(key)) {
+//         return substitution.get(key);
+//     }
+//     else {
+//         return key;
+//     }
+// }
 
 function unaryExpression(object) {
     return object.operator + object.argument.value;
@@ -180,13 +199,46 @@ function MemberExpression(object) {
     return termCheck(object.object) + '[' + termCheck(object.property) + ']';
 }
 
-function addRowToTable(Line, Type, Name, Condition, Value, table) {
-    table[0].push(Line);
-    table[1].push(Type);
-    table[2].push(Name);
-    table[3].push(Condition);
-    table[4].push(Value);
+function subHas(key){
+    if (substitution.get(key)!=null) {
+        return substitution.get(key);
+    }
+    else {
+        return key;
+    }
 }
+function scopeHas(key){
+    if (assignmentScope.get(key)!=null) {
+        return assignmentScope.get(key);
+    }
+    else {
+        return key;
+    }
+}
+function changeValSab(key, newVal) {
+    if (substitution.has(key)) {
+        substitution.delete(key);
+        substitution.set(key, newVal);
+    }
+    else {
+        substitution.set(key, newVal);
+    }
+}
+function changeValScope(key, newVal) {
+    if (assignmentScope.has(key)) {
+        assignmentScope.delete(key);
+        assignmentScope.set(key, newVal);
+    }
+    else {
+        assignmentScope.set(key, newVal);
+    }
+}
+function readCodeLineByLine(lines){
+    for(let i = 0;i < lines.length;i++){
+        original.set(i+1,lines[i]);
+    }
+}
+
 const arrayOfFunctions = {
     FunctionDeclaration: func,
     BlockStatement: block,
@@ -196,9 +248,8 @@ const arrayOfFunctions = {
     AssignmentExpression: assignment,
     WhileStatement: whileSt,
     ReturnStatement: ret,
-    ForStatement: forSt,
     Program: prog,
     UpdateExpression: upExp,
-    DoWhileStatement: doWhile
+    VariableDeclarator: variableDec
 };
 

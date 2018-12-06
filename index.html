@@ -1,6 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
     <head>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/js-beautify/1.8.8/beautify.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/js-beautify/1.8.8/beautify-css.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/js-beautify/1.8.8/beautify-html.js"></script>
         <meta charset="UTF-8">
 
         <style>
@@ -55,6 +58,11 @@
                         <label>Parsed code here</label>
                     </div>
                 </td>
+                <td>
+                    <div>
+                        <label>symbolic substitution</label>
+                    </div>
+                </td>
             </tr>
             <tr>
                 <td>
@@ -67,6 +75,11 @@
                         <textarea id="parsedCode" title="Parse code"></textarea>
                     </div>
                 </td>
+                <td>
+                    <div class="textAreaWrapper">
+                        <textarea id="globalization" title="Parse code"></textarea>
+                    </div>
+                </td>
             </tr>
             <tr>
                 <td>
@@ -77,19 +90,6 @@
                 <td>
                 </td>
             </tr>
-        </table>
-        <table id="myTable">
-            <thead>
-            <tr>
-                <th>Line</th>
-                <th>Type</th>
-                <th>Name</th>
-                <th>Condition</th>
-                <th>Value</th>
-            </tr>
-            </thead>
-            <tbody>
-            </tbody>
         </table>
         <script src="dist/bundle.js"></script>
     </body>
