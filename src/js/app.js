@@ -1,12 +1,29 @@
 import * as $ from 'jquery';
-import {parseCode, codeParse,readCodeLineByLine} from './code-analyzer';
+import {parseCode, codeParse,readCodeLineByLine,variablesInsertion} from './code-analyzer';
 $(document).ready(function () {
     $('#codeSubmissionButton').click(() => {
         let codeToParse = $('#codePlaceholder').val();
+        let variables=$('#vars').val();
+        variablesInsertion(variables);
         readCodeLineByLine(codeToParse.split('\n'));
         let parsedCode = parseCode(codeToParse);
         let code=codeParse(parsedCode);
         $('#parsedCode').val(JSON.stringify(parsedCode, null, 2));
-
+        code.forEach(logMapElements);
+        // for (let x=0;x<code.size;x++){
+        //     console.log(code.)
+        // }
     });
 });
+function logMapElements(value, key, map){
+    if (value.startsWith('false')){
+        console.log(value.substring(6));
+        $('#myTable').append('<tr><td bgcolor="#8b0000">'+value.substring(6)+'</td></tr>');
+    }
+    else if (value.startsWith('true')){
+        $('#myTable').append('<tr><td bgcolor="#006400">'+value.substring(5)+'</td></tr>');
+    }
+    else {
+        $('#myTable').append('<tr><td>'+value+'</td></tr>');
+    }
+}
