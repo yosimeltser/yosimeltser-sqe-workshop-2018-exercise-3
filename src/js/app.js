@@ -2,7 +2,24 @@ import * as $ from 'jquery';
 import {parseCode, codeParse,readCodeLineByLine,variablesInsertion} from './code-analyzer';
 $(document).ready(function () {
     $('#codeSubmissionButton').click(() => {
-        let codeToParse = $('#codePlaceholder').val();
+        delTableView();
+        // let codeToParse = $('#codePlaceholder').val();
+        let codeToParse='function foo(x, y, z){\n' +
+            '    let a = x + 1;\n' +
+            '    let b = a + y;\n' +
+            '    let c = 0;\n' +
+            '    \n' +
+            '    if (b < z) {\n' +
+            '        c = c + 5;\n' +
+            '        return x + y + z + c;\n' +
+            '    } else if (b < z * 2) {\n' +
+            '        c = c + x + 5;\n' +
+            '        return x + y + z + c;\n' +
+            '    } else {\n' +
+            '        c = c + z + 5;\n' +
+            '        return x + y + z + c;\n' +
+            '    }\n' +
+            '}';
         let variables=$('#vars').val();
         variablesInsertion(variables);
         readCodeLineByLine(codeToParse.split('\n'));
@@ -10,14 +27,10 @@ $(document).ready(function () {
         let code=codeParse(parsedCode);
         $('#parsedCode').val(JSON.stringify(parsedCode, null, 2));
         code.forEach(logMapElements);
-        // for (let x=0;x<code.size;x++){
-        //     console.log(code.)
-        // }
     });
 });
 function logMapElements(value, key, map){
     if (value.startsWith('false')){
-        console.log(value.substring(6));
         $('#myTable').append('<tr><td bgcolor="#8b0000">'+value.substring(6)+'</td></tr>');
     }
     else if (value.startsWith('true')){
@@ -26,4 +39,7 @@ function logMapElements(value, key, map){
     else {
         $('#myTable').append('<tr><td>'+value+'</td></tr>');
     }
+}
+function delTableView() {
+    $('#myTable').empty();
 }
