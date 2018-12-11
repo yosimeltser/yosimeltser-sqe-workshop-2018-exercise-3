@@ -82,4 +82,46 @@ describe('The javascript parser', () => {
         let code=codeParse(parsedCode);
         assert.equal(code.get(1), 'function foo(x,y,z){');
     });
+    it('evaluation', () => {
+        // let codeToParse = $('#codePlaceholder').val();
+        let codeToParse='function foo(x,y,z){\n' +
+            '    let a;\n' +
+            '    let b = 10;\n' +
+            '    let c = 0;\n' +
+            '    \n' +
+            '    if (b < z) {\n' +
+            '        c = c + 5;\n' +
+            '        return x + y + z + c;\n' +
+            '    } else if (b < z * 2) {\n' +
+            '        c = c + x + 5;\n' +
+            '        return x + y + z + c;\n' +
+            '    } else {\n' +
+            '        c = c + z + 5;\n' +
+            '        return x + y + z + c;\n' +
+            '    }\n' +
+            '}\n';
+        variablesInsertion('1,2,3');
+        readCodeLineByLine(codeToParse.split('\n'));
+        let parsedCode = parseCode(codeToParse);
+        let code=codeParse(parsedCode);
+        assert.equal(code.get(1), 'function foo(x,y,z){');
+    });
+    it('if within if', () => {
+        // let codeToParse = $('#codePlaceholder').val();
+        let codeToParse='function foo(x){\n' +
+            '    let a = x + 1;\n' +
+            '    a=20;  \n' +
+            '    if (a >= 20) {\n' +
+            '        let z=20; \n' +
+            '        if (a<z){\n' +
+            '        return -x;\n' +
+            '        }\n' +
+            '    }\n' +
+            '}\n';
+        variablesInsertion('1');
+        readCodeLineByLine(codeToParse.split('\n'));
+        let parsedCode = parseCode(codeToParse);
+        let code=codeParse(parsedCode);
+        assert.equal(code.get(1), 'function foo(x){');
+    });
 });

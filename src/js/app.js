@@ -3,23 +3,7 @@ import {parseCode, codeParse,readCodeLineByLine,variablesInsertion} from './code
 $(document).ready(function () {
     $('#codeSubmissionButton').click(() => {
         delTableView();
-        // let codeToParse = $('#codePlaceholder').val();
-        let codeToParse='function foo(x, y, z){\n' +
-            '    let a = x + 1;\n' +
-            '    let b = a + y;\n' +
-            '    let c = 0;\n' +
-            '    \n' +
-            '    if (b < z) {\n' +
-            '        c = c + 5;\n' +
-            '        return x + y + z + c;\n' +
-            '    } else if (b < z * 2) {\n' +
-            '        c = c + x + 5;\n' +
-            '        return x + y + z + c;\n' +
-            '    } else {\n' +
-            '        c = c + z + 5;\n' +
-            '        return x + y + z + c;\n' +
-            '    }\n' +
-            '}';
+        let codeToParse = $('#codePlaceholder').val();
         let variables=$('#vars').val();
         variablesInsertion(variables);
         readCodeLineByLine(codeToParse.split('\n'));

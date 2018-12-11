@@ -14,13 +14,17 @@ let substitution = new Map();
 let assignmentScope = new Map();
 let inputVector = new Map();
 let values = [];
+let global=true;
+let scope=false;
 //HANDLERS
 let func = (parsedCode) => {
+    global=false;
     parsedCode.params.forEach(function (parameter) {
         inputVector.set(parameter.name, values[0]);
         values.shift();
     });
     codeParse(parsedCode.body);
+    global=true;
 };
 let block = (parsedCode) => {
     codeParse(parsedCode.body);
@@ -29,49 +33,54 @@ let block = (parsedCode) => {
 let variable = (parsedCode) => {
     codeParse(parsedCode.declarations);
 };
-//TODO check if variable is global- do not delete lines with declaration of global variables
+
 let variableDec = (parsedCode) => {
     let line = parsedCode.id.loc.start.line;
-    if (parsedCode.init != null) {
-        changeValSab(parsedCode.id.name, binarySub(termCheck(parsedCode.init)));
+    if (!global){
+        original.delete(line);
+        if (parsedCode.init != null) {
+            changeVal(parsedCode.id.name, binarySub(termCheck(parsedCode.init)));
+        }
+        else {
+            substitution.set(parsedCode.id.name, '');
+        }
     }
     else {
-        substitution.set(parsedCode.id.name, '');
+        if (parsedCode.init == null) {inputVector.set(parsedCode.id.name, '');}
+        else {inputVector.set(parsedCode.id.name, binarySub(termCheck(parsedCode.init)));}
     }
-    //if not global!!!!
-    original.delete(line);
 };
 let expr = (parsedCode) => {
     codeParse(parsedCode.expression);
 };
+
 let assignment = (parsedCode) => {
-    let value;
-    if (parsedCode.right.type !== 'BinaryExpression') {
-        changeValScope(termCheck(parsedCode.left), termCheck(parsedCode.right));
-    }
-    //RIGHT LEAF IS A BINARY EXPRESSION
-    else {
-        value = binarySub(binaryExpression(parsedCode.right));
-        changeValScope(termCheck(parsedCode.left), value);
-    }
+    let spaces = original.get(parsedCode.left.loc.start.line).search(/\S/);
     if (inputVector.has(termCheck(parsedCode.left))) {
-        original.set(parsedCode.left.loc.start.line, termCheck(parsedCode.left) + ' = ' + binarySub(termCheck(parsedCode.right)));
+        original.set(parsedCode.left.loc.start.line, new Array(spaces + 1).join(' ') + termCheck(parsedCode.left) + ' = ' + binarySub(termCheck(parsedCode.right)) + ';');
         inputVector.set(termCheck(parsedCode.left), binarySub(termCheck(parsedCode.right)));
+        return;
+    }
+    else original.delete(parsedCode.left.loc.start.line);
+    if (parsedCode.right.type !== 'BinaryExpression') {
+        changeVal(termCheck(parsedCode.left), binarySub(termCheck(parsedCode.right)));
     }
     else {
-        //check assignment for global variable
-        original.delete(parsedCode.left.loc.start.line);
+        changeVal(termCheck(parsedCode.left), binarySub(binaryExpression(parsedCode.right)));
     }
 
 };
 
 let whileSt = (parsedCode, table) => {
+    scope=true;
     let line = parsedCode.test.left.loc.start.line;
     let condition = binarySub(binaryExpression(parsedCode.test));
     let value = 'while ( ' + condition + ') {';
-    original.set(line, value);
+    let spaces = original.get(line).search(/\S/);
+    original.set(line, new Array(spaces + 1).join(' ') + value );
     assignmentScope = new Map(substitution);
     codeParse(parsedCode.body, table);
+    scope=false;
 };
 let ret = (parsedCode) => {
     let line = parsedCode.argument.loc.start.line;
@@ -80,6 +89,7 @@ let ret = (parsedCode) => {
     original.set(line, new Array(spaces + 1).join(' ') + value + ';');
 };
 let ifState = (parsedCode, table) => {
+    scope=true;
     let line = parsedCode.test.left.loc.start.line;
     let value = binarySub(binaryExpression(parsedCode.test));
     if (alternate == true) {
@@ -88,35 +98,34 @@ let ifState = (parsedCode, table) => {
     else {
         value = ' if (' + value + ') {';
     }
-    value = checkTest(evaluation(binarySub(binaryExpression(parsedCode.test)))) + new Array(original.get(line).search(/\S/) + 1).join(' ') + value;
+    value = eval(evaluation(binarySub(binaryExpression(parsedCode.test)))) + new Array(original.get(line).search(/\S/) + 1).join(' ') + value;
     original.set(line, value);
     assignmentScope = new Map(substitution);
     codeParse(parsedCode.consequent, table);
+    scope=false;
     if (parsedCode.alternate != undefined) {
-        alternate = true;
+        alternate = true;scope=true;
+        assignmentScope = new Map(substitution);
         codeParse(parsedCode.alternate, table);
-        alternate = false;
+        scope=false;alternate = false;
     }
 };
 let prog = (parsedCode) => {
     codeParse(parsedCode.body);
 };
-//TODO check if needed unary
+//TODO check if needed update
 let upExp = (parsedCode) => {
     let line = parsedCode.argument.loc.start.line;
     return line;
-    // let type = parsedCode.type;
-    // let name = '';
-    // let condition = '';
-    // let value = '';
-    // if (parsedCode.prefix) {
-    //     value = parsedCode.operator + parsedCode.argument.name;
-    // }
-    // else {
-    //     value = parsedCode.argument.name + parsedCode.operator;
-    // }
 };
-
+let ArrayExpression= function(object){
+    let str='[ ';
+    object.elements.forEach(function (Element) {
+        str+=termCheck(Element)+' ';
+    });
+    str+=' ]';
+    return str;
+};
 
 function codeParse(parsedCode) {
     if (Array.isArray(parsedCode)) {
@@ -133,7 +142,7 @@ function codeParse(parsedCode) {
 //HELP FUNCTIONS
 function binaryExpression(object) {
     if (object.left.type !== 'BinaryExpression') {
-        return termCheck(object.left) + ' ' + object.operator + ' ' + termCheck(object.right);
+        return '( '+termCheck(object.left) + ' ' + object.operator + ' ' + termCheck(object.right)+' )';
     }
     else {
         return binaryExpression(object.left) + ' ' + object.operator + ' ' + termCheck(object.right);
@@ -186,6 +195,9 @@ function termCheck(object) {
     else if (object.type == 'MemberExpression') {
         return MemberExpression(object);
     }
+    else if (object.type=='ArrayExpression'){
+        return ArrayExpression(object);
+    }
     else {
         return binaryExpression(object);
     }
@@ -193,7 +205,7 @@ function termCheck(object) {
 
 
 function unaryExpression(object) {
-    return object.operator + object.argument.value;
+    return object.operator + termCheck(object.argument);
 }
 
 function MemberExpression(object) {
@@ -218,30 +230,43 @@ function scopeHas(key) {
     }
 }
 
-function changeValSab(key, newVal) {
-    if (substitution.has(key)) {
-        substitution.delete(key);
-        substitution.set(key, newVal);
+function changeVal(key, newVal) {
+    if (!checkIfArray(newVal)){
+        if (scope ==false)
+            substitution.set(key, newVal);
+        else
+            assignmentScope.set(key, newVal);
     }
-    else {
-        substitution.set(key, newVal);
-    }
-}
-
-function changeValScope(key, newVal) {
-    if (inputVector.has(key)) {
-        return;
-    }
-    else if (assignmentScope.has(key)) {
-        assignmentScope.delete(key);
-        assignmentScope.set(key, newVal);
-    }
-    else {
-        assignmentScope.set(key, newVal);
+    else{
+        return arrChangeVal(key, newVal);
     }
 }
-
-
+function arrChangeVal(key, newVal){
+    let arr=newVal.split(' ');
+    let i=0;
+    arr.forEach(function(e){
+        if (e!=='[' && e!=']' && e!=''){
+            if (scope==false){
+                substitution.set(key+'['+i+']', e);
+            }
+            else{
+                assignmentScope.set(key+'['+i+']', e);
+            }
+            i++;
+        }
+    });
+}
+function checkIfArray(object){
+    if ( typeof object == 'string'){
+        if (object.startsWith(' [')&&object.endsWith(']')){
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+    return false;
+}
 function readCodeLineByLine(lines) {
     //global variables
     alternate = false;
@@ -249,7 +274,8 @@ function readCodeLineByLine(lines) {
     substitution = new Map();
     assignmentScope = new Map();
     inputVector = new Map();
-    let values = [];
+    global=true;
+    scope=false;
     for (let i = 0; i < lines.length; i++) {
         original.set(i + 1, lines[i]);
     }
@@ -257,30 +283,7 @@ function readCodeLineByLine(lines) {
 
 function variablesInsertion(variables) {
     values = variables.split(',');
-
 }
-
-//TODO ===, <==
-function checkTest(value) {
-    let idx;
-    if ((idx = value.indexOf('<=')) !== -1) {
-        return eval(value.substring(0, idx)) <= eval(value.substring(idx + 2));
-    }
-    else if ((idx = value.indexOf('>=')) !== -1) {
-        return eval(value.substring(0, idx)) >= eval(value.substring(idx + 2));
-    }
-    else if ((idx = value.indexOf('<')) !== -1) {
-        return eval(value.substring(0, idx)) < eval(value.substring(idx + 1));
-    }
-    else if ((idx = value.indexOf('==')) !== -1) {
-        return eval(value.substring(0, idx)) == eval(value.substring(idx + 2));
-    }
-    else {
-        idx = value.indexOf('>');
-        return eval(value.substring(0, idx)) > eval(value.substring(idx + 1));
-    }
-}
-
 
 const arrayOfFunctions = {
     FunctionDeclaration: func,
@@ -293,6 +296,7 @@ const arrayOfFunctions = {
     ReturnStatement: ret,
     Program: prog,
     UpdateExpression: upExp,
-    VariableDeclarator: variableDec
+    VariableDeclarator: variableDec,
+    ArrayExpression:ArrayExpression
 };
 
