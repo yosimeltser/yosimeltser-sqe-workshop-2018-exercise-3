@@ -8,7 +8,8 @@ $(document).ready(function () {
         variablesInsertion(variables);
         readCodeLineByLine(codeToParse.split('\n'));
         let parsedCode = parseCode(codeToParse);
-        let code=codeParse(parsedCode);
+        let substitution = new Map();
+        let code=codeParse(parsedCode,substitution);
         $('#parsedCode').val(JSON.stringify(parsedCode, null, 2));
         code.forEach(logMapElements);
     });
