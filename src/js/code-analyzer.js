@@ -7,18 +7,18 @@ export {variablesInsertion};
 const parseCode = (codeToParse) => {
     return esprima.parseScript(codeToParse, {loc: true});
 };
-//global variables
+//GLOBAL VARIABLES
 let alternate = false;
 let original = new Map();
-
 let inputVector = new Map();
 let values = [];
 let global = true;
-//HANDLERS
+
+//TYPE HANDLERS
 let func = (parsedCode, substitution) => {
     global = false;
     parsedCode.params.forEach(function (parameter) {
-        inputVector.set(parameter.name, values[0]);
+        inputVec(termCheck(parameter), values[0]);
         values.shift();
     });
     codeParse(parsedCode.body, substitution);
@@ -27,90 +27,85 @@ let func = (parsedCode, substitution) => {
 let block = (parsedCode, substitution) => {
     codeParse(parsedCode.body, substitution);
 };
-
 let variable = (parsedCode, substitution) => {
     codeParse(parsedCode.declarations, substitution);
 };
-
 let variableDec = (parsedCode, substitution) => {
     let line = parsedCode.id.loc.start.line;
     if (!global) {
         original.delete(line);
         if (parsedCode.init != null) {
-            changeVal(parsedCode.id.name, binarySub(termCheck(parsedCode.init),substitution),substitution);
+            changeVal(termCheck(parsedCode.id), binarySub(termCheck(parsedCode.init), substitution), substitution);
         }
         else {
-            substitution.set(parsedCode.id.name, '');
+            substitution.set(termCheck(parsedCode.id), '');
         }
     }
     else {
         if (parsedCode.init == null) {
-            inputVector.set(parsedCode.id.name, '');
+            inputVec(termCheck(parsedCode.id), '');
         }
         else {
-            inputVector.set(parsedCode.id.name, binarySub(termCheck(parsedCode.init),substitution));
+            inputVec(termCheck(parsedCode.id), binarySub(termCheck(parsedCode.init), substitution));
         }
     }
 };
-let expr = (parsedCode,substitution) => {
-    codeParse(parsedCode.expression,substitution);
+let expr = (parsedCode, substitution) => {
+    codeParse(parsedCode.expression, substitution);
 };
-
-let assignment = (parsedCode,substitution) => {
+let assignment = (parsedCode, substitution) => {
     let spaces = original.get(parsedCode.left.loc.start.line).search(/\S/);
     if (inputVector.has(termCheck(parsedCode.left))) {
-        original.set(parsedCode.left.loc.start.line, new Array(spaces + 1).join(' ') + termCheck(parsedCode.left) + ' = ' + binarySub(termCheck(parsedCode.right),substitution) + ';');
-        inputVector.set(termCheck(parsedCode.left), binarySub(termCheck(parsedCode.right),substitution));
+        original.set(parsedCode.left.loc.start.line, new Array(spaces + 1).join(' ') + termCheck(parsedCode.left) + ' = ' + binarySub(termCheck(parsedCode.right), substitution) + ';');
+        inputVec(termCheck(parsedCode.left), binarySub(termCheck(parsedCode.right), substitution));
         return;
     }
     else original.delete(parsedCode.left.loc.start.line);
     if (parsedCode.right.type !== 'BinaryExpression') {
-        changeVal(termCheck(parsedCode.left), binarySub(termCheck(parsedCode.right)),substitution);
+        changeVal(termCheck(parsedCode.left), binarySub(termCheck(parsedCode.right), substitution), substitution);
     }
     else {
-        changeVal(termCheck(parsedCode.left), binarySub(binaryExpression(parsedCode.right),substitution),substitution);
+        changeVal(termCheck(parsedCode.left), binarySub(binaryExpression(parsedCode.right), substitution), substitution);
     }
 
 };
-
 let whileSt = (parsedCode, substitution) => {
     let line = parsedCode.test.left.loc.start.line;
-    let condition = binarySub(binaryExpression(parsedCode.test),substitution);
+    let condition = binarySub(binaryExpression(parsedCode.test), substitution);
     let value = 'while ( ' + condition + ') {';
     let spaces = original.get(line).search(/\S/);
     original.set(line, new Array(spaces + 1).join(' ') + value);
     codeParse(parsedCode.body, substitution);
 };
-let ret = (parsedCode,substitution) => {
+let ret = (parsedCode, substitution) => {
     let line = parsedCode.argument.loc.start.line;
-    let value = 'return ' + binarySub(termCheck(parsedCode.argument),substitution);
+    let value = 'return ' + binarySub(termCheck(parsedCode.argument), substitution);
     let spaces = original.get(line).search(/\S/);
     original.set(line, new Array(spaces + 1).join(' ') + value + ';');
 };
 let ifState = (parsedCode, substitution) => {
+    let scope = new Map(substitution);
     let line = parsedCode.test.left.loc.start.line;
-    let value = binarySub(binaryExpression(parsedCode.test),substitution);
+    let value = binarySub(binaryExpression(parsedCode.test), substitution);
     if (alternate == true) {
         value = ' else if (' + value + ') {';
     }
     else {
         value = ' if (' + value + ') {';
     }
-    value = eval(evaluation(binarySub(binaryExpression(parsedCode.test),substitution))) + new Array(original.get(line).search(/\S/) + 1).join(' ') + value;
+    value = eval(evaluation(binarySub(binaryExpression(parsedCode.test), substitution))) + new Array(original.get(line).search(/\S/) + 1).join(' ') + value;
     original.set(line, value);
     codeParse(parsedCode.consequent, substitution);
     if (parsedCode.alternate != undefined) {
-        codeParse(parsedCode.alternate, substitution);
+        alternate = true;
+        codeParse(parsedCode.alternate, scope);
+        alternate = false;
     }
 };
 let prog = (parsedCode, substitution) => {
     codeParse(parsedCode.body, substitution);
 };
-//TODO check if needed update
-let upExp = (parsedCode) => {
-    let line = parsedCode.argument.loc.start.line;
-    return line;
-};
+
 let ArrayExpression = function (object) {
     let str = '[ ';
     object.elements.forEach(function (Element) {
@@ -120,6 +115,7 @@ let ArrayExpression = function (object) {
     return str;
 };
 
+//MAIN RECURSIVE FUNCTION
 function codeParse(parsedCode, substitution) {
     if (Array.isArray(parsedCode)) {
         parsedCode.forEach(function (Element) {
@@ -147,7 +143,7 @@ function binarySub(object, substitution) {
         let arr = object.split(' ');
         let str = '';
         arr.forEach(function (element) {
-            let x = subHas(element,substitution);
+            let x = subHas(element, substitution);
             str = str + ' ' + x;
         });
         return str.replace(/ +(?= )/g, '');
@@ -169,29 +165,28 @@ function evaluation(object) {
     return str;
 }
 
-//RETURNS A TERM -> NUMBER OR VAR ,ACCORDING TO IDENTIFIER OR LATERAL
-/* istanbul ignore else  */
-function termCheck(object) {
-    if (object.type == 'Literal') {
-        return object.value;
-    }
-    else if (object.type == 'Identifier') {
-        return object.name;
-    }
-    else if (object.type == 'UnaryExpression') {
-        return unaryExpression(object);
-    }
-    else if (object.type == 'MemberExpression') {
-        return MemberExpression(object);
-    }
-    else if (object.type == 'ArrayExpression') {
-        return ArrayExpression(object);
+function inputVec(key, value) {
+    if (!checkIfArray(value)) {
+        inputVector.set(key, value);
     }
     else {
-        return binaryExpression(object);
+        return arrChangeVal(key, value, false);
     }
 }
 
+function termCheck(object) {
+    if (object.type == 'Literal') return object.value;
+    else if (object.type == 'Identifier') return object.name;
+    else if (object.type == 'UnaryExpression') return unaryExpression(object);
+    else return complexTermCheck(object);
+}
+
+//artificial function
+function complexTermCheck(object) {
+    if (object.type == 'MemberExpression') return MemberExpression(object);
+    else if (object.type == 'ArrayExpression') return ArrayExpression(object);
+    else return binaryExpression(object);
+}
 
 function unaryExpression(object) {
     return object.operator + termCheck(object.argument);
@@ -210,13 +205,12 @@ function subHas(key, substitution) {
     }
 }
 
-
 function changeVal(key, newVal, substitution) {
     if (!checkIfArray(newVal)) {
         substitution.set(key, newVal);
     }
     else {
-        return arrChangeVal(key, newVal);
+        return arrChangeVal(key, newVal, substitution);
     }
 }
 
@@ -225,16 +219,21 @@ function arrChangeVal(key, newVal, substitution) {
     let i = 0;
     arr.forEach(function (e) {
         if (e !== '[' && e != ']' && e != '') {
-            substitution.set(key + '[' + i + ']', e);
+            if (substitution == false) {
+                inputVector.set(key + '[' + i + ']', e);
+            }
+            else {
+                substitution.set(key + '[' + i + ']', e);
+            }
+            i++;
         }
-        i++;
+
     });
 }
 
-
 function checkIfArray(object) {
     if (typeof object == 'string') {
-        if (object.startsWith(' [') && object.endsWith(']')) {
+        if (object.trim().startsWith('[') && object.trim().endsWith(']')) {
             return true;
         }
         else {
@@ -256,7 +255,20 @@ function readCodeLineByLine(lines) {
 }
 
 function variablesInsertion(variables) {
-    values = variables.split(',');
+    let input = esprima.parseScript(variables);
+    if (variables==''){
+        return;
+    }
+    else {
+        if (input.body[0].expression.expressions != undefined) {
+            input.body[0].expression.expressions.forEach(function (e) {
+                values.push(termCheck(e));
+            });
+        }
+        else {
+            values.push(termCheck(input.body[0].expression));
+        }
+    }
 }
 
 const arrayOfFunctions = {
@@ -269,7 +281,6 @@ const arrayOfFunctions = {
     WhileStatement: whileSt,
     ReturnStatement: ret,
     Program: prog,
-    UpdateExpression: upExp,
     VariableDeclarator: variableDec,
     ArrayExpression: ArrayExpression
 };

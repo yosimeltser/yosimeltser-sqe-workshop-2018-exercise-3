@@ -2,10 +2,6 @@ import assert from 'assert';
 import {codeParse, parseCode, readCodeLineByLine, variablesInsertion} from '../src/js/code-analyzer';
 
 describe('The javascript parser', () => {
-    it('Assignments V1.0', () => {
-        let original=codeParse(parseCode('let a = x + 1;\n' + 'let b = a + y;\n'));
-        assert.equal(original.size, '0');
-    });
     it('return V1.0', () => {
         // let codeToParse = $('#codePlaceholder').val();
         let codeToParse =  'function foo(x){'+'\n'+
@@ -14,7 +10,8 @@ describe('The javascript parser', () => {
             '}';
         readCodeLineByLine(codeToParse.split('\n'));
         let parsedCode = parseCode(codeToParse);
-        let code=codeParse(parsedCode);
+        let substitution = new Map();
+        let code=codeParse(parsedCode,substitution);
         assert.equal(code.get(1), 'function foo(x){');
     });
     it('if V1.0', () => {
@@ -37,7 +34,8 @@ describe('The javascript parser', () => {
             '}';
         readCodeLineByLine(codeToParse.split('\n'));
         let parsedCode = parseCode(codeToParse);
-        let code=codeParse(parsedCode);
+        let substitution = new Map();
+        let code=codeParse(parsedCode,substitution);
         assert.equal(code.get(1), 'function foo(x,y,z){');
     });
     it('if V2.0', () => {
@@ -60,7 +58,8 @@ describe('The javascript parser', () => {
             '}';
         readCodeLineByLine(codeToParse.split('\n'));
         let parsedCode = parseCode(codeToParse);
-        let code=codeParse(parsedCode);
+        let substitution = new Map();
+        let code=codeParse(parsedCode,substitution);
         assert.equal(code.get(1), 'function foo(x,y,z){');
     });
     it('while V2.0', () => {
@@ -79,7 +78,8 @@ describe('The javascript parser', () => {
             '}\n';
         readCodeLineByLine(codeToParse.split('\n'));
         let parsedCode = parseCode(codeToParse);
-        let code=codeParse(parsedCode);
+        let substitution = new Map();
+        let code=codeParse(parsedCode,substitution);
         assert.equal(code.get(1), 'function foo(x,y,z){');
     });
     it('evaluation', () => {
@@ -103,7 +103,8 @@ describe('The javascript parser', () => {
         variablesInsertion('1,2,3');
         readCodeLineByLine(codeToParse.split('\n'));
         let parsedCode = parseCode(codeToParse);
-        let code=codeParse(parsedCode);
+        let substitution = new Map();
+        let code=codeParse(parsedCode,substitution);
         assert.equal(code.get(1), 'function foo(x,y,z){');
     });
     it('if within if', () => {
@@ -121,7 +122,41 @@ describe('The javascript parser', () => {
         variablesInsertion('1');
         readCodeLineByLine(codeToParse.split('\n'));
         let parsedCode = parseCode(codeToParse);
-        let code=codeParse(parsedCode);
+        let substitution = new Map();
+        let code=codeParse(parsedCode,substitution);
         assert.equal(code.get(1), 'function foo(x){');
+    });
+    it('array', () => {
+        // let codeToParse = $('#codePlaceholder').val();
+        let codeToParse=
+            'let z;\n'+
+            'let y=[20,10];\n'+
+            'function foo(x){\n' +
+            '    let a = x[0];\n' +
+            '    a=[80,90]  \n' +
+            '    let w;  \n' +
+            '    if (a[1] >= 20) {\n' +
+            '        let z=20; \n' +
+            '        if (a[0]<z){\n' +
+            '        return x[0];\n' +
+            '        }\n' +
+            '    }\n' +
+            '}\n';
+        variablesInsertion('[20,10]');
+        readCodeLineByLine(codeToParse.split('\n'));
+        let parsedCode = parseCode(codeToParse);
+        let substitution = new Map();
+        let code=codeParse(parsedCode,substitution);
+        assert.equal(code.get(3), 'function foo(x){');
+    });
+    it('array', () => {
+        // let codeToParse = $('#codePlaceholder').val();
+        let codeToParse=''
+        variablesInsertion('');
+        readCodeLineByLine(codeToParse.split('\n'));
+        let parsedCode = parseCode(codeToParse);
+        let substitution = new Map();
+        codeParse(parsedCode,substitution);
+        assert.equal('', '');
     });
 });
