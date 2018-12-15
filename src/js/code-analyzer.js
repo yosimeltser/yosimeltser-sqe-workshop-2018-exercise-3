@@ -4,9 +4,11 @@ export {codeParse};
 export {parseCode};
 export {readCodeLineByLine};
 export {variablesInsertion};
+export {globalInsertion};
 const parseCode = (codeToParse) => {
     return esprima.parseScript(codeToParse, {loc: true});
 };
+
 //GLOBAL VARIABLES
 let alternate = false;
 let original = new Map();
@@ -70,12 +72,13 @@ let assignment = (parsedCode, substitution) => {
 
 };
 let whileSt = (parsedCode, substitution) => {
+    let scope = new Map(substitution);
     let line = parsedCode.test.left.loc.start.line;
     let condition = binarySub(binaryExpression(parsedCode.test), substitution);
     let value = 'while ( ' + condition + ') {';
     let spaces = original.get(line).search(/\S/);
     original.set(line, new Array(spaces + 1).join(' ') + value);
-    codeParse(parsedCode.body, substitution);
+    codeParse(parsedCode.body, scope);
 };
 let ret = (parsedCode, substitution) => {
     let line = parsedCode.argument.loc.start.line;
@@ -95,7 +98,7 @@ let ifState = (parsedCode, substitution) => {
     }
     value = eval(evaluation(binarySub(binaryExpression(parsedCode.test), substitution))) + new Array(original.get(line).search(/\S/) + 1).join(' ') + value;
     original.set(line, value);
-    codeParse(parsedCode.consequent, substitution);
+    codeParse(parsedCode.consequent, scope);
     if (parsedCode.alternate != undefined) {
         alternate = true;
         codeParse(parsedCode.alternate, scope);
@@ -141,12 +144,17 @@ function binaryExpression(object) {
 function binarySub(object, substitution) {
     if (typeof object === 'string' || object instanceof String) {
         let arr = object.split(' ');
-        let str = '';
-        arr.forEach(function (element) {
-            let x = subHas(element, substitution);
-            str = str + ' ' + x;
-        });
-        return str.replace(/ +(?= )/g, '');
+        if (arr==undefined){
+            return;
+        }
+        else{
+            let str = '';
+            arr.forEach(function (element) {
+                let x = subHas(element, substitution);
+                str = str + ' ' + x;
+            });
+            return str.replace(/ +(?= )/g, '');
+        }
     }
     else return object;
 }
@@ -175,8 +183,12 @@ function inputVec(key, value) {
 }
 
 function termCheck(object) {
-    if (object.type == 'Literal') return object.value;
-    else if (object.type == 'Identifier') return object.name;
+    if (object.type == 'Literal') {
+        return LiteralExpression(object);
+    }
+    else if (object.type == 'Identifier') {
+        return object.name;
+    }
     else if (object.type == 'UnaryExpression') return unaryExpression(object);
     else return complexTermCheck(object);
 }
@@ -188,6 +200,11 @@ function complexTermCheck(object) {
     else return binaryExpression(object);
 }
 
+function LiteralExpression(object) {
+    if (object.raw != undefined && object.value != true && object.raw != false) return object.raw;
+    return object.value;
+}
+
 function unaryExpression(object) {
     return object.operator + termCheck(object.argument);
 }
@@ -197,7 +214,7 @@ function MemberExpression(object) {
 }
 
 function subHas(key, substitution) {
-    if (substitution.get(key) != null) {
+    if (substitution!=undefined &&substitution.get(key) != null  ) {
         return substitution.get(key);
     }
     else {
@@ -249,6 +266,7 @@ function readCodeLineByLine(lines) {
     original = new Map();
     inputVector = new Map();
     global = true;
+    values = [];
     for (let i = 0; i < lines.length; i++) {
         original.set(i + 1, lines[i]);
     }
@@ -256,7 +274,7 @@ function readCodeLineByLine(lines) {
 
 function variablesInsertion(variables) {
     let input = esprima.parseScript(variables);
-    if (variables==''){
+    if (variables == '') {
         return;
     }
     else {
@@ -269,6 +287,15 @@ function variablesInsertion(variables) {
             values.push(termCheck(input.body[0].expression));
         }
     }
+}
+
+function globalInsertion(object) {
+    global = true;
+    object.forEach(function (globe_var)
+    {
+        variableDec(globe_var.declarations[0],new Map());
+    });
+    global = false;
 }
 
 const arrayOfFunctions = {

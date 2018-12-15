@@ -1,14 +1,15 @@
 import * as $ from 'jquery';
-import {parseCode, codeParse,readCodeLineByLine,variablesInsertion} from './code-analyzer';
+import {parseCode, codeParse,readCodeLineByLine,variablesInsertion,globalInsertion} from './code-analyzer';
 $(document).ready(function () {
     $('#codeSubmissionButton').click(() => {
         delTableView();
         let codeToParse = $('#codePlaceholder').val();
         let variables=$('#vars').val();
-        variablesInsertion(variables);
         readCodeLineByLine(codeToParse.split('\n'));
+        variablesInsertion(variables);
         let parsedCode = parseCode(codeToParse);
         let substitution = new Map();
+        globalInsertion(parsedCode.body.filter(dec=>dec.type!=='FunctionDeclaration'));
         let code=codeParse(parsedCode,substitution);
         $('#parsedCode').val(JSON.stringify(parsedCode, null, 2));
         code.forEach(logMapElements);

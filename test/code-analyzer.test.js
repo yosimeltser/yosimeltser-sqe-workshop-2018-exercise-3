@@ -142,8 +142,8 @@ describe('The javascript parser', () => {
             '        }\n' +
             '    }\n' +
             '}\n';
-        variablesInsertion('[20,10]');
         readCodeLineByLine(codeToParse.split('\n'));
+        variablesInsertion('[20,10]');
         let parsedCode = parseCode(codeToParse);
         let substitution = new Map();
         let code=codeParse(parsedCode,substitution);
