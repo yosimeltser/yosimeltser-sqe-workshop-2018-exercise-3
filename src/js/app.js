@@ -10,7 +10,7 @@ $(document).ready(function () {
         let parsedCode = parseCode(codeToParse);
         let substitution = new Map();
         globalInsertion(parsedCode.body.filter(dec=>dec.type!=='FunctionDeclaration'));
-        let code=codeParse(parsedCode,substitution);
+        let code=codeParse(parsedCode.body.filter(dec=>dec.type==='FunctionDeclaration'),substitution);
         $('#parsedCode').val(JSON.stringify(parsedCode, null, 2));
         code.forEach(logMapElements);
     });
