@@ -1,10 +1,11 @@
 import * as esprima from 'esprima';
-
+//EXPORTS FUNCTIONS TO APP
 export {codeParse};
 export {parseCode};
 export {readCodeLineByLine};
 export {variablesInsertion};
 export {globalInsertion};
+//CONVERT CODE TO JSON
 const parseCode = (codeToParse) => {
     return esprima.parseScript(codeToParse, {loc: true});
 };
@@ -16,7 +17,7 @@ let inputVector = new Map();
 let values = [];
 let global = true;
 
-//TYPE HANDLERS
+//TYPE HANDLERS//
 let func = (parsedCode, substitution) => {
     global = false;
     parsedCode.params.forEach(function (parameter) {
@@ -101,7 +102,7 @@ let ifState = (parsedCode, substitution) => {
     codeParse(parsedCode.consequent, scope);
     if (parsedCode.alternate != undefined) {
         alternate = true;
-        codeParse(parsedCode.alternate, scope);
+        codeParse(parsedCode.alternate, new Map(substitution));
         alternate = false;
     }
 };
@@ -144,17 +145,12 @@ function binaryExpression(object) {
 function binarySub(object, substitution) {
     if (typeof object === 'string' || object instanceof String) {
         let arr = object.split(' ');
-        if (arr==undefined){
-            return;
-        }
-        else{
-            let str = '';
-            arr.forEach(function (element) {
-                let x = subHas(element, substitution);
-                str = str + ' ' + x;
-            });
-            return str.replace(/ +(?= )/g, '');
-        }
+        let str = '';
+        arr.forEach(function (element) {
+            let x = subHas(element, substitution);
+            str = str + ' ' + x;
+        });
+        return str.replace(/ +(?= )/g, '');
     }
     else return object;
 }
@@ -214,7 +210,7 @@ function MemberExpression(object) {
 }
 
 function subHas(key, substitution) {
-    if (substitution!=undefined &&substitution.get(key) != null  ) {
+    if (substitution != undefined && substitution.get(key) != null) {
         return substitution.get(key);
     }
     else {
@@ -291,9 +287,8 @@ function variablesInsertion(variables) {
 
 function globalInsertion(object) {
     global = true;
-    object.forEach(function (globe_var)
-    {
-        variableDec(globe_var.declarations[0],new Map());
+    object.forEach(function (globe_var) {
+        variableDec(globe_var.declarations[0], new Map());
     });
     global = false;
 }

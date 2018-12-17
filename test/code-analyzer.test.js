@@ -1,5 +1,5 @@
 import assert from 'assert';
-import {codeParse, parseCode, readCodeLineByLine, variablesInsertion} from '../src/js/code-analyzer';
+import {codeParse, globalInsertion, parseCode, readCodeLineByLine, variablesInsertion} from '../src/js/code-analyzer';
 
 describe('The javascript parser', () => {
     it('return V1.0', () => {
@@ -142,14 +142,15 @@ describe('The javascript parser', () => {
             '        }\n' +
             '    }\n' +
             '}\n';
+
         readCodeLineByLine(codeToParse.split('\n'));
         variablesInsertion('[20,10]');
         let parsedCode = parseCode(codeToParse);
-        let substitution = new Map();
-        let code=codeParse(parsedCode,substitution);
+        globalInsertion(parsedCode.body.filter(dec=>dec.type!=='FunctionDeclaration'));
+        let code=codeParse(parsedCode.body.filter(dec=>dec.type==='FunctionDeclaration'),new Map());
         assert.equal(code.get(3), 'function foo(x){');
     });
-    it('array', () => {
+    it('check', () => {
         // let codeToParse = $('#codePlaceholder').val();
         let codeToParse=''
         variablesInsertion('');
@@ -158,5 +159,55 @@ describe('The javascript parser', () => {
         let substitution = new Map();
         codeParse(parsedCode,substitution);
         assert.equal('', '');
+    });
+    it('global before and after ', () => {
+        // let codeToParse = $('#codePlaceholder').val();
+        let codeToParse=
+            'let z;\n'+
+            'let y=[20,10];\n'+
+            'function foo(x){\n' +
+            '    let a = x[0];\n' +
+            '    a=[80,90]  \n' +
+            '    let w;  \n' +
+            '    if (a[1] >= 20) {\n' +
+            '        let z=20; \n' +
+            '        if (a[0]<z){\n' +
+            '        return x[0];\n' +
+            '        }\n' +
+            '    }\n' +
+            'let g=20\n'+
+            '}\n';
+
+        readCodeLineByLine(codeToParse.split('\n'));
+        variablesInsertion('[20,10]');
+        let parsedCode = parseCode(codeToParse);
+        globalInsertion(parsedCode.body.filter(dec=>dec.type!=='FunctionDeclaration'));
+        let code=codeParse(parsedCode.body.filter(dec=>dec.type==='FunctionDeclaration'),new Map());
+        assert.equal(code.get(3), 'function foo(x){');
+    });
+    it('empty functions ', () => {
+        // let codeToParse = $('#codePlaceholder').val();
+        let codeToParse=
+            'let z;\n'+
+            'let y=[20,10];\n'+
+            'function foo(){\n' +
+            '    let a = x[0];\n' +
+            '    a=[80,90]  \n' +
+            '    let w;  \n' +
+            '    if (a[1] >= 20) {\n' +
+            '        let z=20; \n' +
+            '        if (a[0]<z){\n' +
+            '        return x[0];\n' +
+            '        }\n' +
+            '    }\n' +
+            'let g=20\n'+
+            '}\n';
+
+        readCodeLineByLine(codeToParse.split('\n'));
+        variablesInsertion('[20,10]');
+        let parsedCode = parseCode(codeToParse);
+        globalInsertion(parsedCode.body.filter(dec=>dec.type!=='FunctionDeclaration'));
+        let code=codeParse(parsedCode.body.filter(dec=>dec.type==='FunctionDeclaration'),new Map());
+        assert.equal(code.get(3), 'function foo(){');
     });
 });

@@ -20,7 +20,8 @@
         }
         #vars {
             position: relative;
-            left: 1px;
+            float: left;
+            right: 0;
         }
         #myTable {
             font-family: "Trebuchet MS", Arial, Helvetica, sans-serif;
@@ -53,6 +54,9 @@
 </head>
 <body>
 <table>
+    <th>
+        <input  placeholder="Input Vector" id=vars type="text" name="email" size="25">
+    </th>
     <tr>
         <td>
             <div>
@@ -94,10 +98,10 @@
                 <button id="codeSubmissionButton">Parse code</button>
             </div>
         </td>
-        <td>
-        <td>
-            input vector<input id=vars type="text" name="email" size="25">
-        </td>
+        <!--<td>-->
+        <!--<td>-->
+            <!--input vector<input id=vars type="text" name="email" size="25">-->
+        <!--</td>-->
         </td>
         <td>
         </td>

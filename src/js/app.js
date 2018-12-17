@@ -15,7 +15,7 @@ $(document).ready(function () {
         code.forEach(logMapElements);
     });
 });
-function logMapElements(value, key, map){
+function logMapElements(value){
     if (value.startsWith('false')){
         $('#myTable').append('<tr><td bgcolor="#8b0000">'+value.substring(6)+'</td></tr>');
     }
