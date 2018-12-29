@@ -22,10 +22,12 @@
     "license": "ISC",
     "dependencies": {
         "escope": "^3.6.0",
+        "esgraph": "^0.3.0",
         "esprima": "^4.0.1",
         "jquery": "^3.3.1",
         "safe-eval": "^0.4.1",
-        "scope": "^0.10.1"
+        "scope": "^0.10.1",
+        "viz.js": "^1.8.1"
     },
     "devDependencies": {
         "cross-env": "^5.2.0",
