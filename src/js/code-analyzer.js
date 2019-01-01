@@ -1,6 +1,6 @@
 import * as esprima from 'esprima';
 
-const Viz = require('viz.js');
+
 import * as es from 'esgraph';
 //EXPORTS FUNCTIONS TO APP
 export {esTry};
@@ -25,6 +25,7 @@ let global = true;
 let node = [];
 let lineToboolean = new Map();
 let d;
+let visited = [];
 //TYPE HANDLERS//
 let func = (parsedCode, substitution) => {
     global = false;
@@ -66,7 +67,7 @@ let expr = (parsedCode, substitution) => {
 };
 let assignment = (parsedCode, substitution) => {
     let spaces = original.get(parsedCode.left.loc.start.line).search(/\S/);
-    if (inputVector.has(termCheck(parsedCode.left))) {
+    if (inputVector.has(termCheck(parsedCode.left)) && !inputVector.has(termCheck(parsedCode.right))) {
         original.set(parsedCode.left.loc.start.line, new Array(spaces + 1).join(' ') + termCheck(parsedCode.left) + ' = ' + binarySub(termCheck(parsedCode.right), substitution) + ';');
         inputVec(termCheck(parsedCode.left), binarySub(termCheck(parsedCode.right), substitution));
         return;
@@ -85,6 +86,7 @@ let whileSt = (parsedCode, substitution) => {
     let line = parsedCode.test.left.loc.start.line;
     let condition = binarySub(binaryExpression(parsedCode.test), substitution);
     let value = 'while ( ' + condition + ') {';
+    value = eval(evaluation(binarySub(binaryExpression(parsedCode.test), substitution))) + new Array(original.get(line).search(/\S/) + 1).join(' ') + value;
     let spaces = original.get(line).search(/\S/);
     original.set(line, new Array(spaces + 1).join(' ') + value);
     codeParse(parsedCode.body, scope);
@@ -110,12 +112,7 @@ let ifState = (parsedCode, substitution) => {
     codeParse(parsedCode.consequent, scope);
     if (parsedCode.alternate != undefined) {
         alternate = true;
-        if (parsedCode.alternate.type != 'IfStatement') {
-            codeParse(parsedCode.alternate, new Map(substitution));
-        }
-        else {
-            codeParse(parsedCode.alternate, new Map(substitution));
-        }
+        codeParse(parsedCode.alternate, new Map(substitution));
     }
 };
 let prog = (parsedCode, substitution) => {
@@ -133,54 +130,88 @@ let ArrayExpression = function (object) {
 
 ///////////////////////
 //esgraph handlers
-let VarAss = function (c,d,curr) {
-    d[curr]=d[curr].slice(0, 4) + 'color=green ' + d[curr].slice(4);
-    curr++;
-    if (c.astNode.type == 'VariableDeclaration' || c.astNode.type == 'AssignmentExpression') {
-        if (c.next[0].astNode == undefined)
-            iterateTheObject(c.next[1],d,curr);
-        else if (c.next.length === 1)
-            iterateTheObject(c.next[0],d,curr);
-    }
+let VarAss = function (c, d, curr) {
+    let x = d[curr].indexOf(' ') + 2;
+    d[curr] = d[curr].slice(0, x) + 'color=green ' + d[curr].slice(x);
+    curr = getNewCurr('VarAss', curr);
+    if (c.next[0].astNode == undefined)
+        iterateTheObject(c.next[1], d, curr);
+    else
+        iterateTheObject(c.next[0], d, curr);
+
 };
-let bin = function (c,d,curr) {
-    d[curr]=d[curr].slice(0, 4) + 'color=green ' + d[curr].slice(4);
-    let line=c.astNode.loc.start.line;
-    let boolean=lineToboolean.get(line);
-    curr=getNewCurr(boolean,curr);
-    if (boolean){
-        iterateTheObject(c.true,d,curr);
+let bin = function (c, d, curr) {
+    if (c.parent.type === 'WhileStatement') {
+        whileHandler(c, d, curr);
     }
     else {
-        iterateTheObject(c.false,d,curr);
+        let x = d[curr].indexOf(' ') + 2;
+        d[curr] = d[curr].slice(0, x) + 'color=green ' + d[curr].slice(x);
+        let line = c.astNode.loc.start.line;
+        let boolean = lineToboolean.get(line);
+        curr = getNewCurr(boolean, curr);
+        if (boolean) iterateTheObject(c.true, d, curr);
+        else iterateTheObject(c.false, d, curr);
     }
+
 
 };
-function getNewCurr(boolean,curr){
-    let node ='n'+curr +' ->';
-    for (let i=0;i<d.length;i++){
-        if (boolean){
-            if (d[i].startsWith(node) && d[i].includes('label="true"')){
-                let index=d[i].indexOf('>')+3;
-                return parseInt(d[i].substring(index,d[i].indexOf('[')-1));
-            }
-        }
-        else {
-            if (d[i].startsWith(node) && d[i].includes('label="false"')){
-                let index=d[i].indexOf('>')+3;
-                return parseInt(d[i].substring(index,d[i].indexOf('[')-1));
-            }
-        }
 
-        continue;
+function whileHandler(c, d, curr) {
+    if (visited.includes(curr)) {
+        curr = getNewCurr(false, curr);
+        iterateTheObject(c.false, d, curr);
     }
-    return;
+    else {
+        let x = d[curr].indexOf(' ') + 2;
+        d[curr] = d[curr].slice(0, x) + 'color=green ' + d[curr].slice(x);
+        visited.push(curr);
+        let line = c.astNode.loc.start.line;
+        let boolean = lineToboolean.get(line);
+        curr = getNewCurr(boolean, curr);
+        if (boolean) iterateTheObject(c.true, d, curr);
+        else iterateTheObject(c.false, d, curr);
+    }
 }
-let retEs = function (c) {
-    return;
+
+function getNewCurr(boolean, curr) {
+    let node = 'n' + curr + ' ->';
+    for (let i = 0; i < d.length; i++) {
+        if (!d[i].startsWith(node)) continue;
+        else {
+            if (boolean === 'VarAss') {
+                return checkSubNext(d[i]);
+            }
+            else if (artFunc(d[i], boolean) === 'cont') continue;
+            else return artFunc(d[i], boolean);
+
+        }
+    }
+}
+
+function artFunc(object, bool) {
+    if (bool && object.includes('label="true"')) {
+        return checkSubNext(object);
+    }
+    else if (object.includes('label="false"')) {
+        return checkSubNext(object);
+    }
+    return 'cont';
+}
+
+function checkSubNext(object) {
+    let index = object.indexOf('>') + 3;
+    return parseInt(object.substring(index, object.indexOf('[') - 1));
+}
+
+let retEs = function (c, d, curr) {
+    let x = d[curr].indexOf(' ') + 2;
+    d[curr] = d[curr].slice(0, x) + 'color=green ' + d[curr].slice(x);
 };
+
 
 //MAIN RECURSIVE FUNCTION
+
 function codeParse(parsedCode, substitution) {
     if (Array.isArray(parsedCode)) {
         parsedCode.forEach(function (Element) {
@@ -356,26 +387,35 @@ function globalInsertion(object) {
 
 
 function esTry(codeToParse) {
+    visited = [];
     let code = esprima.parseScript(codeToParse, {range: true, loc: true});
     let c = es(code.body[0].body);
     d = es.dot(c, {counter: 0, source: codeToParse, loc: true});
     let h = es.dot(c);
     getTypes(h.split('\n'));
     d = d.split('\n');
-    iterateTheObject(c[2][1],d,1);
+    iterateTheObject(c[2][1], d, 1);
     let z = converToString(cleanException(d));
-    return Viz('digraph {' + z + '}');
-
+    return z;
 }
 
 function getTypes(h) {
     for (let i = 1; i < h.length; i++) {
-        if (h[i].includes('->') || h[i].includes('label="entry"') || h[i] == '' || h[i].includes('label="exit"')) {
+        if (checkType(h[i])) {
             continue;
         }
         else {
             node.push((h[i].match(/"(.*?)"/)[0]));
         }
+    }
+}
+
+function checkType(object) {
+    if (object.includes('->') || object.includes('label="entry"') || object == '' || object.includes('label="exit"')) {
+        return true;
+    }
+    else {
+        return false;
     }
 }
 
@@ -394,52 +434,50 @@ function converToString(arr) {
     let i = 0;
     arr.forEach(function (e) {
         if (e.includes('->') || e.includes('entry') || e.includes('exit') || e === '') {
-            str += e;
+            str += e + '\n';
             return;
         }
         e = e.replace(';', '').replace('let', '');
         str += shape(e, i);
-        if (unite(i)) {
-        }
         i++;
         str += '\n';
     });
     return str;
 }
 
-function unite(i) {
-    if ((node[i] === '"VariableDeclaration"' || node[i] === '"AssignmentExpression"') && (node[i + 1] === '"VariableDeclaration"' || node[i + 1] === '"AssignmentExpression"'))
-        return true;
-    else return false;
-}
 
 function shape(e, i) {
-    if (node[i] === '"BinaryExpression"') {
-        return e.slice(0, 4) + 'shape=diamond ' + e.slice(4);
+    let x = e.indexOf(' ') + 2;
+    if (node[i] === '"BinaryExpression"' || node[i] === '"LogicalExpression"') {
+        return e.slice(0, x) + 'shape=diamond ' + e.slice(x);
     }
-    return e.slice(0, 4) + 'shape=rectangle ' + e.slice(4);
+    return e.slice(0, x) + 'shape=rectangle ' + e.slice(x);
 }
 
-function iterateTheObject(c,d,curr) {
-    if (c.next != undefined) {
-        console.log(c.astNode.type);
-        handlersFunction[c.astNode.type](c,d,curr);
-    }
+function iterateTheObject(c, d, curr) {
+    // if (c.next != undefined && !d[curr].includes('->')) {
+    handlersFunction[c.astNode.type](c, d, curr);
+    // }
+    // else {
+    //     return;
+    // }
 }
+
 
 function insertBooleanLines(code) {
+    node = [];
+    lineToboolean = new Map();
     for (let [key, value]  of code) {
-        if (value.startsWith('false')) {
+        if (value.trim().startsWith('false')) {
             lineToboolean.set(key, false);
         }
-        else if (value.startsWith('true')) {
+        else if (value.trim().startsWith('true')) {
             lineToboolean.set(key, true);
         }
         else {
             continue;
         }
     }
-    console.log(lineToboolean);
 }
 
 
@@ -448,9 +486,9 @@ const handlersFunction = {
     VariableDeclaration: VarAss,
     ExpressionStatement: expr,
     AssignmentExpression: VarAss,
-    WhileStatement: whileSt,
     ReturnStatement: retEs,
-    BinaryExpression: bin
+    BinaryExpression: bin,
+    LogicalExpression: bin
 };
 const arrayOfFunctions = {
     FunctionDeclaration: func,
