@@ -82,14 +82,13 @@ let assignment = (parsedCode, substitution) => {
 
 };
 let whileSt = (parsedCode, substitution) => {
-    let scope = new Map(substitution);
     let line = parsedCode.test.left.loc.start.line;
-    let condition = binarySub(binaryExpression(parsedCode.test), substitution);
+    let condition =binarySub(binaryExpression(parsedCode.test), substitution);
     let value = 'while ( ' + condition + ') {';
-    value = eval(evaluation(binarySub(binaryExpression(parsedCode.test), substitution))) + new Array(original.get(line).search(/\S/) + 1).join(' ') + value;
+    value = eval(evaluation(evaluation(binarySub(binaryExpression(parsedCode.test), substitution)))) + new Array(original.get(line).search(/\S/) + 1).join(' ') + value;
     let spaces = original.get(line).search(/\S/);
     original.set(line, new Array(spaces + 1).join(' ') + value);
-    codeParse(parsedCode.body, scope);
+    codeParse(parsedCode.body, new Map(substitution));
 };
 let ret = (parsedCode, substitution) => {
     let line = parsedCode.argument.loc.start.line;

@@ -9,79 +9,7 @@ import {
 } from '../src/js/code-analyzer';
 
 describe('The javascript parser', () => {
-    it('return V1.0', () => {
-        let codeToParse =  'function YR(x) {\n' +
-            '    let a = 0;\n' +
-            '    let b = 1;\n' +
-            '    while (x == 2) {\n' +
-            '        if (x == 1) {\n' +
-            '            while (x == 1) {\n' +
-            '                if (x == 1) {\n' +
-            '                    x = 10;\n' +
-            '                } else if (x == 1) {\n' +
-            '                    a = a\n' +
-            '                }\n' +
-            '            }\n' +
-            '        } else {\n' +
-            '            while (x == 2) {\n' +
-            '                if (x == 1) {\n' +
-            '                    x = 30;\n' +
-            '                } else if (x == 2) {\n' +
-            '                    a = a\n' +
-            '                }\n' +
-            '            }\n' +
-            '        }\n' +
-            '    }\n' +
-            '    return 3;\n' +
-            '}';
-        readCodeLineByLine(codeToParse.split('\n'));
-        variablesInsertion('1');
-        let parsedCode = parseCode(codeToParse);
-        let substitution = new Map();
-        let code=codeParse(parsedCode.body.filter(dec=>dec.type==='FunctionDeclaration'),substitution);
-        insertBooleanLines(code);
-
-        readCodeLineByLine(codeToParse.split('\n'));
-        esTry(codeToParse);
-        assert.equal('1', '1');
-    });
-    it('return V1.0', () => {
-        let codeToParse =  'function YR(x) {\n' +
-            '    let a = 0;\n' +
-            '    let b = 1;\n' +
-            '    while (x == 2) {\n' +
-            '        if (x == 1) {\n' +
-            '            while (x == 1) {\n' +
-            '                if (x == 1) {\n' +
-            '                    x = 10;\n' +
-            '                } else if (x == 1) {\n' +
-            '                    a = a\n' +
-            '                }\n' +
-            '            }\n' +
-            '        } else {\n' +
-            '            while (x == 2) {\n' +
-            '                if (x == 1) {\n' +
-            '                    x = 30;\n' +
-            '                } else if (x == 2) {\n' +
-            '                    a = a\n' +
-            '                }\n' +
-            '            }\n' +
-            '        }\n' +
-            '    }\n' +
-            '    return 3;\n' +
-            '}';
-        readCodeLineByLine(codeToParse.split('\n'));
-        variablesInsertion('2');
-        let parsedCode = parseCode(codeToParse);
-        let substitution = new Map();
-        let code=codeParse(parsedCode.body.filter(dec=>dec.type==='FunctionDeclaration'),substitution);
-        insertBooleanLines(code);
-
-        readCodeLineByLine(codeToParse.split('\n'));
-        esTry(codeToParse);
-        assert.equal('1', '1');
-    });
-    it('return V1.0', () => {
+    it('example number 1', () => {
         let codeToParse =  'function foo(x, y, z) {\n' +
             '    let a = x + 1;\n' +
             '    let b = a + y;\n' +
@@ -103,12 +31,11 @@ describe('The javascript parser', () => {
         let substitution = new Map();
         let code=codeParse(parsedCode.body.filter(dec=>dec.type==='FunctionDeclaration'),substitution);
         insertBooleanLines(code);
-
         readCodeLineByLine(codeToParse.split('\n'));
-        esTry(codeToParse);
-        assert.equal('1', '1');
+        let arr=esTry(codeToParse);
+        assert.equal(arr.split('\n')[0],'n0 [label="entry", style="rounded"]');
     });
-    it('return V1.0', () => {
+    it('example number 2 extended', () => {
         let codeToParse =  'function foo(x, y, z){\n' +
             '   let a = x + 1;\n' +
             '   let b = a + y;\n' +
@@ -118,8 +45,12 @@ describe('The javascript parser', () => {
             '       c = a + b;\n' +
             '       z = c * 2;\n' +
             '       a=a+1;\n' +
+            '   }    \n' +
+            '   while (a > z) {\n' +
+            '       c = a + b;\n' +
+            '       z = c * 2;\n' +
+            '       a=a+1;\n' +
             '   }\n' +
-            '   \n' +
             '   return z;\n' +
             '}\n';
         readCodeLineByLine(codeToParse.split('\n'));
@@ -128,10 +59,9 @@ describe('The javascript parser', () => {
         let substitution = new Map();
         let code=codeParse(parsedCode.body.filter(dec=>dec.type==='FunctionDeclaration'),substitution);
         insertBooleanLines(code);
-
         readCodeLineByLine(codeToParse.split('\n'));
-        esTry(codeToParse);
-        assert.equal('1', '1');
+        let arr= esTry(codeToParse);
+        assert.equal(arr.split('\n')[0],'n0 [label="entry", style="rounded"]');
     });
     it('return V1.0', () => {
         let codeToParse =  'function foo(x){'+'\n'+
@@ -269,7 +199,6 @@ describe('The javascript parser', () => {
         assert.equal(code.get(1), 'function foo(x){');
     });
     it('array', () => {
-        // let codeToParse = $('#codePlaceholder').val();
         let codeToParse=
             'let z;\n'+
             'let y=[20,10];\n'+
@@ -292,8 +221,7 @@ describe('The javascript parser', () => {
         let code=codeParse(parsedCode.body.filter(dec=>dec.type==='FunctionDeclaration'),new Map());
         assert.equal(code.get(3), 'function foo(x){');
     });
-    it('check', () => {
-        // let codeToParse = $('#codePlaceholder').val();
+    it('check empty', () => {
         let codeToParse=''
         variablesInsertion('');
         readCodeLineByLine(codeToParse.split('\n'));
@@ -303,7 +231,6 @@ describe('The javascript parser', () => {
         assert.equal('', '');
     });
     it('global before and after ', () => {
-        // let codeToParse = $('#codePlaceholder').val();
         let codeToParse=
             'let z;\n'+
             'let y=[20,10];\n'+
@@ -344,7 +271,6 @@ describe('The javascript parser', () => {
             '    }\n' +
             'let g=20\n'+
             '}\n';
-
         readCodeLineByLine(codeToParse.split('\n'));
         variablesInsertion('[20,10]');
         let parsedCode = parseCode(codeToParse);

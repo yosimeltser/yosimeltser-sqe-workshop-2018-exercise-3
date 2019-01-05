@@ -12,7 +12,8 @@ $(document).ready(function () {
         let substitution = new Map();
         let code=codeParse(parsedCode.body.filter(dec=>dec.type==='FunctionDeclaration'),substitution);
         insertBooleanLines(code);
-        $('#myTable').html(Viz('digraph {' + esTry(codeToParse) + '}'));
+        let es=esTry(codeToParse);
+        $('#myTable').html(Viz('digraph {' + es + '}'));
         $('#parsedCode').val(JSON.stringify(parsedCode, null, 2));
     });
 });
