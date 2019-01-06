@@ -454,12 +454,7 @@ function shape(e, i) {
 }
 
 function iterateTheObject(c, d, curr) {
-    // if (c.next != undefined && !d[curr].includes('->')) {
     handlersFunction[c.astNode.type](c, d, curr);
-    // }
-    // else {
-    //     return;
-    // }
 }
 
 
